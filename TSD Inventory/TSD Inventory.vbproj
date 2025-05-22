@@ -1,0 +1,585 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>
+    </ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{276CC1FF-F41C-4DC7-BCD8-0772DFE4CE3C}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <StartupObject>TSD_Inventory.My.MyApplication</StartupObject>
+    <RootNamespace>TSD_Inventory</RootNamespace>
+    <AssemblyName>TSD Inventory</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>WindowsForms</MyType>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <PublishUrl>\\192.168.2.176\tsd\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Unc</InstallFrom>
+    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateMode>Background</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>true</UpdateRequired>
+    <MapFileExtensions>false</MapFileExtensions>
+    <UpdateUrl>http://192.168.2.176/tsd/</UpdateUrl>
+    <MinimumRequiredVersion>1.0.1.130</MinimumRequiredVersion>
+    <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
+    <ApplicationRevision>145</ApplicationRevision>
+    <ApplicationVersion>1.0.1.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <PublishWizardCompleted>true</PublishWizardCompleted>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <BootstrapperComponentsLocation>Relative</BootstrapperComponentsLocation>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>TSD Inventory.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>TSD Inventory.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>Off</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationManifest>My Project\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetZone>LocalIntranet</TargetZone>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateManifests>true</GenerateManifests>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>Resources\printcard.ico</ApplicationIcon>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="DataGridViewExtension">
+      <HintPath>C:\Program Files\CompletIT\DataGridView Extension\v1.1.1\Bin\DataGridViewExtension.dll</HintPath>
+    </Reference>
+    <Reference Include="DGVEExcelExporting">
+      <HintPath>C:\Program Files\CompletIT\DataGridView Extension\v1.1.1\Bin\DGVEExcelExporting.dll</HintPath>
+    </Reference>
+    <Reference Include="Npgsql, Version=2.0.11.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>Resources\Npgsql.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Data">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Drawing">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Core">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Xml.Linq">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="TabControlEX">
+      <HintPath>..\..\DLL\TabControlEX.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Xml.Linq" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ApplicationEvents.vb" />
+    <Compile Include="Class\AddRacks.vb" />
+    <Compile Include="Class\ApplicationEvents.vb" />
+    <Compile Include="Class\classCorrugatedBox.vb" />
+    <Compile Include="Class\ClassDiecut.vb" />
+    <Compile Include="Class\ClassManageCustomer.vb" />
+    <Compile Include="Class\ClassPrice.vb" />
+    <Compile Include="Class\ClassPrintcard.vb" />
+    <Compile Include="Class\ClassPrintcardForm.vb" />
+    <Compile Include="Class\Customer.vb" />
+    <Compile Include="Class\DataConnection.vb" />
+    <Compile Include="Class\PaperDimension.vb" />
+    <Compile Include="Class\Plate\RubberDieClass.vb" />
+    <Compile Include="Class\units.vb" />
+    <Compile Include="Constant\GlobalConst.vb" />
+    <Compile Include="Location\AddRubberdieLoc.Designer.vb">
+      <DependentUpon>AddRubberdieLoc.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Location\AddRubberdieLoc.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\AboutTSDInventory.Designer.vb">
+      <DependentUpon>AboutTSDInventory.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\AboutTSDInventory.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Location\AddLocation.Designer.vb">
+      <DependentUpon>AddLocation.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Location\AddLocation.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Order\CreateOrderForm.Designer.vb">
+      <DependentUpon>CreateOrderForm.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Order\CreateOrderForm.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Printcard\BrowsePrintcard.Designer.vb">
+      <DependentUpon>BrowsePrintcard.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Printcard\BrowsePrintcard.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\ColorRegistration.Designer.vb">
+      <DependentUpon>ColorRegistration.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\ColorRegistration.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Customer\ContactCustomer.Designer.vb">
+      <DependentUpon>ContactCustomer.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Customer\ContactCustomer.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Customer\CustomerList.Designer.vb">
+      <DependentUpon>CustomerList.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Customer\CustomerList.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Customer\CustomerSetup.Designer.vb">
+      <DependentUpon>CustomerSetup.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Customer\CustomerSetup.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Diecut\DiecutSetup.Designer.vb">
+      <DependentUpon>DiecutSetup.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Diecut\DiecutSetup.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\ExportRptProgress.designer.vb">
+      <DependentUpon>ExportRptProgress.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\ExportRptProgress.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\FilePreview.Designer.vb">
+      <DependentUpon>FilePreview.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\FilePreview.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\GetCombination.Designer.vb">
+      <DependentUpon>GetCombination.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\GetCombination.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LocalDataCache1.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>LocalDataCache1.sync</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\LoginTSD.Designer.vb">
+      <DependentUpon>LoginTSD.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\LoginTSD.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\MainUI.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\MainUI.Designer.vb">
+      <DependentUpon>MainUI.vb</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="Presentation\Printcard\DotNetBarTabControl.vb">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Presentation\Printcard\PriceSet.Designer.vb">
+      <DependentUpon>PriceSet.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Printcard\PriceSet.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Printcard\PrintCard.Designer.vb">
+      <DependentUpon>PrintCard.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Printcard\PrintCard.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Printcard\PrintcardProperties.Designer.vb">
+      <DependentUpon>PrintcardProperties.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Printcard\PrintcardProperties.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\Printcard\printcard_report.Designer.vb">
+      <DependentUpon>printcard_report.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\Printcard\printcard_report.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\RubberDie\AssignRubberdie.Designer.vb">
+      <DependentUpon>AssignRubberdie.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\RubberDie\AssignRubberdie.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Presentation\RubberDie\RubberDie.Designer.vb">
+      <DependentUpon>RubberDie.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Presentation\RubberDie\RubberDie.vb">
+      <SubType>Form</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Location\AddRubberdieLoc.resx">
+      <DependentUpon>AddRubberdieLoc.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\AboutTSDInventory.resx">
+      <DependentUpon>AboutTSDInventory.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Location\AddLocation.resx">
+      <DependentUpon>AddLocation.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Order\CreateOrderForm.resx">
+      <DependentUpon>CreateOrderForm.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Printcard\BrowsePrintcard.resx">
+      <DependentUpon>BrowsePrintcard.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\ColorRegistration.resx">
+      <DependentUpon>ColorRegistration.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Customer\ContactCustomer.resx">
+      <DependentUpon>ContactCustomer.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Customer\CustomerList.resx">
+      <DependentUpon>CustomerList.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Customer\CustomerSetup.resx">
+      <DependentUpon>CustomerSetup.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Diecut\DiecutSetup.resx">
+      <DependentUpon>DiecutSetup.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\ExportRptProgress.resx">
+      <DependentUpon>ExportRptProgress.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\FilePreview.resx">
+      <DependentUpon>FilePreview.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\GetCombination.resx">
+      <DependentUpon>GetCombination.vb</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\LoginTSD.resx">
+      <DependentUpon>LoginTSD.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\MainUI.resx">
+      <DependentUpon>MainUI.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>PublicVbMyResourcesResXFileCodeGenerator</Generator>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Printcard\PriceSet.resx">
+      <DependentUpon>PriceSet.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Printcard\PrintCard.resx">
+      <DependentUpon>PrintCard.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Printcard\PrintcardProperties.resx">
+      <DependentUpon>PrintcardProperties.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\Printcard\printcard_report.resx">
+      <DependentUpon>printcard_report.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\RubberDie\AssignRubberdie.resx">
+      <DependentUpon>AssignRubberdie.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Presentation\RubberDie\RubberDie.resx">
+      <DependentUpon>RubberDie.vb</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="ClassDiagram1.cd" />
+    <None Include="LocalDataCache1.sync">
+      <SubType>Designer</SubType>
+      <Generator>MSDataSyncGenerator</Generator>
+      <LastGenOutput>LocalDataCache1.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\app.manifest" />
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="TSD Inventory_TemporaryKey.pfx" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{C0C07587-41A7-46C8-8FBD-3F9C8EBE2DDC}" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\printcard.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.0">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.SQL.Server.Compact.3.5">
+      <Visible>False</Visible>
+      <ProductName>SQL Server Compact 3.5 SP2</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <PublishFile Include="DataGridViewExtension">
+      <Visible>False</Visible>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="DataGridViewExtension.XmlSerializers">
+      <Visible>False</Visible>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="DGVEExcelExporting">
+      <Visible>False</Visible>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="Microsoft.Office.Interop.Excel">
+      <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="Microsoft.Vbe.Interop">
+      <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="Mono.Security">
+      <Visible>False</Visible>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="Npgsql">
+      <Visible>False</Visible>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="Office">
+      <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="stdole">
+      <Visible>False</Visible>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Class\Printcard\" />
+    <Folder Include="Reports\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="bin\Debug\html\unknown.htm" />
+    <None Include="bin\Debug\html\ps.htm" />
+    <None Include="bin\Debug\html\nofile.htm" />
+    <None Include="bin\Debug\html\gimp.htm" />
+    <None Include="bin\Debug\html\coreldraw.htm" />
+    <None Include="bin\Debug\html\ai.htm" />
+    <None Include="bin\Debug\html\question1.png" />
+    <None Include="bin\Debug\html\photoshop.png" />
+    <None Include="bin\Debug\html\gimp.png" />
+    <None Include="bin\Debug\html\corel.png" />
+    <None Include="bin\Debug\html\adobe_illustrator.png" />
+    <None Include="html\ps.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="html\gimp.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="html\coreldraw.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="html\ai.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <EmbeddedResource Include="nofile.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <COMReference Include="AxFOXITREADERLib">
+      <Guid>{3A8BD65E-9922-4162-A649-83F2D5326BBE}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>aximp</WrapperTool>
+      <Isolated>True</Isolated>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+      <Private>True</Private>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="html\adobe_illustrator.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\corel.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\gimp.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\nofile.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\photoshop.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\question1.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="html\unknown.htm">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

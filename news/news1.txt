@@ -1,0 +1,51 @@
+﻿
+Canonical's decision to develop Mir, their own display server not derived from X11 or Wayland, hit many as a big surprise today. 
+Canonical previously committed to Wayland in a future Ubuntu release but now it turns out that for months they have secretly 
+been rolling their own solution behind closed doors. 
+
+It will be interesting to see how the Mir situation plays out on Ubuntu, but already Canonical has once again disgruntled
+ upstream open-source developers. Aside from end-users being surprised by this decision to no longer pursue Wayland, the X.Org 
+ and Wayland developers themselves were taken for a ride. 
+
+Kristian Høgsberg, the creator of Wayland/Weston, has posted to his Google+ page about the Canonical Mir announcement. 
+
+Long-time X.Org contributor Daniel Stone, who's also been commenting in our forum thread, was quick to say, 
+"The best part is that the input bit of the rationale is totally wrong: there's no way for clients to get another client's input, 
+short of mapping a full-screen transparent window and convincing the compositor to not decorate it. There also aren't any grabs. 
+Which I could've told them if anyone involved ever bothered to talk to anyone upstream.﻿" 
+
+Stone later added, "I'm not worried about Wayland's future at all. I'm just irritated that this means more work for us, 
+more work for upstream developers, more work for toolkits, more work for hardware vendors, and years of explaining that
+ most of the page explaining that Mir had to be created because Wayland was a) hugely deficient, and b) unfixable, was total bullshit.﻿" 
+
+Kristian also followed-up to Stone's comments. Canonical's Mir specification about Wayland/Weston and its input shortcomings 
+are inaccurate and their sought after input features are already implemented and working in Weston today. 
+
+Lennart Poettering, the Red Hat developer of systemd and PulseAudio fame, was quick to say, "I am sure 'Mir' is going to be 
+a project with a fantastic future, just like bazaar, or Upstart, or Project Harmony before it.﻿" Lennart followed-up to himself
+ with, "isn't Mir this thing that burnt and crashed into the South Pacific Ocean near Fiji on 23rd March, 2001, after some dudes 
+ in Russia flipped a switch after they gave it up? This must be metaphor for something, haven't figured out for what yet, though, 
+ must be something deeper than 'This software includes a space toilet and Canonical will give it up one day, when it will burn and 
+ crash and then we'll be in a south pacific paradise setting.'" 
+
+
+David Airlie, long-time X.Org/Mesa contributor at Red Hat, added, "They should call the next Ubuntu Jumping Sharks﻿." Airlie followed 
+up with, "they barely have anyone competent enough to write a display server, the fact that they are actually quite ignorant of how 
+wayland works makes it even more apparent.﻿" 
+
+Carsten Haitzler, a.k.a. "Rasterman" of the Enlightenment project, wrote a lengthy post: 
+A reads of the mir stuff says to me "oh look. we don't understand wayland at all, neither do we grok X11 that much either". 
+
+Their reasoning on the input in wayland are just total bunk. It doesn't suffer from the X11 snooping/security issues. It's rather 
+clean and neat and the compositor (be it weston or any other one) can decide where input is routed and when, and i'ts easy to do. 
+
+Their reasoning with respect to the Shell just smells of hand-wavy bunk to me. There is nothing privileged about it. It is part 
+of the wayland protocol spec that a compositor may implement any way it likes as long as the results "work" given the shell style
+ it is implementing. You need a shell because things like focus policies, other display policies etc. are implemented outside of 
+ clients and there has to be enough control and data sharing to enable that to work. 
+
+I would just say "ignore mir/canonical and just keep plodding on with wayland".﻿
+For those wondering, the C++ code-base that makes up Mir does require Canonical's CLA (Contributor License Agreement). 
+Canonical also hasn't approached the upstream X.Org/Wayland developers officially. Using the open-source Mesa/Gallium3D 
+driver does require a new EGL DRI2 driver that they currently have packaged in a Mesa PPA on Launchpad, but haven't yet 
+attempted to upstream (or announce) its existence to Mesa developers.
