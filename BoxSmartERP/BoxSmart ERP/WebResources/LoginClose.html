@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Added for responsiveness -->
+    <title>BoxSmart ERP</title>
+    <!-- Removed custom-scrollbars.css as it's not provided and may not be needed for just topbar -->
+    <style>
+        /* Define the color theme variables for consistency */
+        :root {
+            --primary-dark-bg: #2b2d30; /* Main dark background from previous theme */
+            --accent-blue: #0078d7; /* The blue accent color from sidebar active state */
+            --text-color-light: #ffffff; /* White text for dark backgrounds */
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden; /* Prevent scrollbars from the top bar */
+            background-color: var(--primary-dark-bg); /* Ensure body matches top bar background */
+        }
+
+        #title-bar {
+            height: 40px; /* Increased height for better visual balance and clickable area */
+            background-color: var(--primary-dark-bg); /* Use our dark theme primary background */
+            color: var(--text-color-light); /* Use our light text color */
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            -webkit-app-region: drag; /* draggable area */
+            padding: 0 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Subtle shadow for depth */
+        }
+
+        .title-container {
+            display: flex; /* Use flexbox to align icon and text */
+            align-items: center;
+            -webkit-app-region: no-drag; /* Exclude title area from drag region to allow text selection */
+        }
+
+        .app-icon {
+            margin-right: 8px; /* Space between icon and text */
+            width: 24px; /* Size of the SVG icon */
+            height: 24px;
+            fill: var(--text-color-light); /* Color the SVG icon white */
+        }
+
+            .app-icon svg {
+                display: block; /* Remove extra space below SVG */
+            }
+
+
+        .title-text {
+            font-size: 16px; /* Adjusted font size for better readability */
+            font-weight: 600; /* Slightly bolder for prominence */
+        }
+
+        .window-controls {
+            display: flex;
+            -webkit-app-region: no-drag; /* buttons should not be draggable */
+        }
+
+            .window-controls button {
+                background: none;
+                border: none;
+                color: var(--text-color-light); /* Use our light text color for buttons */
+                width: 45px;
+                height: 40px; /* Match title bar height for consistency */
+                font-size: 18px; /* Slightly larger icons/symbols for better clickability */
+                cursor: pointer;
+                transition: background-color 0.2s, color 0.2s;
+                border-radius: 3px; /* Subtle rounded corners for buttons */
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
+                .window-controls button:hover {
+                    background-color: rgba(255, 255, 255, 0.1); /* Lighter hover effect */
+                }
+
+                .window-controls button.close-btn:hover {
+                    background-color: #e81123; /* Red for close button on hover */
+                    color: #ffffff;
+                }
+
+        /* Adjust icon/symbol sizes to be centered and readable */
+        #minimize::before {
+            content: "—";
+        }
+
+        #maximize::before {
+            content: "□";
+            font-size: 16px;
+        }
+        /* Slightly smaller square */
+        #close::before {
+            content: "✕";
+        }
+        /* Clearer 'X' */
+
+    </style>
+</head>
+<body>
+    <div id="title-bar">
+        <div class="title-container">
+            <span class="app-icon">
+                <!-- SVG Icon for BoxSmart ERP - a simple box -->
+                <svg viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.5 7.5L12 3L4.5 7.5L12 12L19.5 7.5Z" stroke="none" />
+                    <path d="M4.5 7.5V16.5L12 21L19.5 16.5V7.5L12 12L4.5 7.5ZM12 12L12 21" stroke="none" />
+                    <!-- Combined paths to fill as a single box shape -->
+                    <path d="M12 2.25L0.75 8.25V15.75L12 21.75L23.25 15.75V8.25L12 2.25ZM11.25 19.35L2.25 14.55V9.45L11.25 14.25L11.25 19.35ZM12.75 19.35L21.75 14.55V9.45L12.75 14.25L12.75 19.35ZM12 12.75L2.25 7.5L12 2.25L21.75 7.5L12 12.75Z" fill-rule="evenodd" clip-rule="evenodd" />
+                </svg>
+            </span>
+            <div class="title-text">BoxSmart ERP</div>
+        </div>
+        <div class="window-controls">
+            <button id="close" class="close-btn" title="Close"></button>
+        </div>
+    </div>
+
+    <script>
+        // This JavaScript will be executed within the WebView2 control.
+        // It's crucial to check if window.chrome.webview exists before attempting to use it,
+        // as it will be undefined if the page is opened directly in a browser or outside WebView2.
+        if (window.chrome && window.chrome.webview) {            
+
+            document.getElementById("close").addEventListener("click", function () {
+                window.chrome.webview.postMessage("btCloseClicked");
+            });
+        } else {
+            // Optional: Provide a console message or fallback behavior if not in WebView2
+            console.warn("window.chrome.webview is not available. This page may not function as expected outside a WebView2 environment.");
+            // You might disable buttons or hide controls here if you want to prevent errors
+            // document.getElementById("minimize").disabled = true;
+            // document.getElementById("maximize").disabled = true;
+            // document.getElementById("close").disabled = true;
+        }
+    </script>
+</body>
+</html>

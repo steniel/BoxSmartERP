@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Printcard Inventory</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">    
+    <script type="text/javascript" src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <link rel="stylesheet" href="custom-scrollbars.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="./bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="css/NewRequest.css" />
+
+    <style>
+
+        /* Default style for the select */
+        .priority-select {
+            color: #000;
+            /*            color: #fff; */
+        }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+
+        <div class="requests-header">
+            <h2><i class="bi bi-tools"></i> New Tooling Request</h2>
+        </div>
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        </div>
+        <div class="menu-separator"></div>
+        <div class="top-form-fields">
+
+
+            <div class="form-group">
+                <label class="form-label">Request Origin <span class="required">*</span></label>
+                <div class="radio-group">
+                    <label for="originInternal">
+                        <input type="radio" id="originInternal" name="request_origin" value="Internal" required>
+                        Internal
+                    </label>
+                    <label for="originExternal">
+                        <input type="radio" id="originExternal" name="request_origin" value="External" required>
+                        External
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="due_date" class="form-label">Due Date <span class="required">*</span></label>
+                <input type="date" class="form-control" id="due_date" name="due_date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="requisition_number" class="form-label">Requisition Number <span class="required">*</span></label>
+                <input type="text" class="form-control" id="requisition_number" name="requisition_number" readonly maxlength="20" required placeholder="S - YYYY / NNN">
+            </div>
+
+            <div class="form-group">
+                <label for="requested_date" class="form-label">Requested Date <span class="required">*</span></label>
+                <input type="text" class="form-control" id="requested_date" name="requested_date" readonly>
+            </div>
+
+            <div class="form-group">
+                <input type="hidden" class="form-control" id="loggedUsername" name="loggedUsername" maxlength="50" required readonly>
+                <input type="hidden" class="form-control" id="loggedUserId" name="loggedUserId" maxlength="3" required readonly>
+            </div>
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: flex-end; gap: 24px;">
+            <div style="flex: 1;">
+                <label class="form-label">Request Type <span class="required">*</span></label>
+                <div class="checkbox-group">
+                    <label for="request_type_rubberdie">
+                        <input type="checkbox" id="request_type_rubberdie" name="request_type" value="Rubberdie">
+                        Rubberdie
+                    </label>                    
+
+                    <label for="request_type_diecut">
+                        <input type="checkbox" id="request_type_diecut" name="request_type" value="Diecut Mould">
+                        Diecut Mould
+                    </label>
+
+                    <div hidden id="diecutTypeWrapper" style="flex: 1;">
+                        <label for="diecutType" class="form-label">Diecut Type:<span class="required"></span></label>
+                        <select id="diecutType" name="diecutType" class="form-control diecut-select" >
+                            <option value="Rotary" selected>Rotary</option>
+                            <option value="Flatbed" >Flatbed</option>                           
+                        </select>
+                    </div>
+
+                    <label for="request_type_printcard">
+                        <input type="checkbox" id="request_type_printcard" name="request_type" value="Printcard" disabled hidden>                        
+                    </label>
+                    <label for="request_type_film">
+                        <input type="checkbox" id="request_type_film" name="request_type" value="Negative Film" disabled hidden>                        
+                    </label>
+                </div>
+            </div>
+
+            <div style="flex: 1;">
+                <label for="priority" class="form-label">Priority <span class="required">*</span></label>
+                <select id="priority" name="priority" class="form-control priority-select" required>
+                    <option value="Low" style="background-color: #008000;">Low</option>
+                    <option value="Normal" style="background-color: #FFFF00;" selected>Normal</option>
+                    <option value="High" style="background-color: #FFA500;">High</option>
+                    <option value="Urgent" style="background-color: #FF0000;">Urgent</option>
+                </select>
+            </div>  
+
+        </div>
+
+        <br />
+        <div class="filter-controls">
+            <button id="newRequest">Add Item</button>
+        </div>
+        <div class="menu-separator"></div>
+        <div class="table-container">
+
+            <div class="table-responsive">
+                <table id="requestsTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>cId</th>
+                            <th>pId</th>
+                            <th>Customer</th>
+                            <th>Quantity</th>
+                            <th>Colors</th>
+                            <th>Unit</th>
+                            <th>Outs</th>
+                            <th>Description</th>
+                            <th>Remarks</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary" id="submitRequestMain">
+                <i class="bi bi-send-fill"></i> Submit Request
+            </button>
+        </div>
+
+        <div id="requestModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h4><i class="fas fa-list"></i> Add Item</h4>
+                <form id="toolingRequestForm" class="modal-form" autocomplete="off">
+                    <div class="form-columns">
+
+                        <div class="form-column">
+                            <!--First column-->
+                            <div class="form-group">
+                                <label for="customerSearch" class="form-label">Customer Search <span class="required">*</span></label>
+                                <input type="text" id="customerSearch" class="form-control" placeholder="Search by organization name..." required>
+                                <input type="hidden" id="selectedCustomerId" name="customer_id">
+                                <div id="customerSearchResults" class="list-group"></div>
+                                <small id="selectedCustomerDisplay" class="form-text text-muted" style="display: none; margin-top: 5px;">Selected Customer: <strong id="customerNameValue"></strong></small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="quantity" class="form-label">Quantity:<span class="required">*</span></label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" max="15" maxlength="2" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="unitType" class="form-label">Unit <span class="required">*</span></label>
+                                <select id="unitType" name="unitType" class="form-control" required>
+                                    <option value="">Select a unit</option>
+                                    <option value="2">SET</option>
+                                    <option value="1">PC.</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="quantity" class="form-label">Number of Outs:<span class="required">*</span></label>
+                                <input type="number" class="form-control" id="numOuts" name="numOuts" max="15" maxlength="2" required>
+                            </div>
+
+                        </div>
+                        <!--Second column-->
+                        <div class="form-column">
+                            <div class="form-group">
+                                <label for="printcardSearch" class="form-label">Printcard Search <span class="required">*</span></label>
+                                <input type="text" id="printcardSearch" class="form-control" placeholder="Search by printcard code or name..." required>
+                                <input type="hidden" id="selectedPrintcardId" name="printcard_id">
+                                <div id="printcardSearchResults" class="list-group"></div>
+                                <small id="selectedPrintcardDisplay" class="form-text text-muted" style="display: none; margin-top: 5px;">Selected Printcard: <strong id="printcardNameValue"></strong></small>
+                            </div>
+                            <div hidden id="numColorsWrapper" style="flex: 1;">
+                                <label for="numColors" class="form-label">Number of colors:<span class="required"></span> </label>
+                                <input type="number" class="form-control" id="numColors" name="numColors" max="5" maxlength="1" required>
+                            </div>
+                            <!--requestDescription only visible if printcard is optional, and if user search for a printcard above, the value will be added here if empty.-->
+                            <div class="form-group" hidden>
+                                <label for="requestDescription" class="form-label">Request description:</label>
+                                <textarea class="form-control" id="requestDescription" name="requestDescription" rows="3" placeholder="If printcard is optional, enter description."></textarea>
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="remarks" class="form-label">Remarks</label>
+                        <textarea class="form-control" id="remarks" name="remarks" rows="3" placeholder="Additional notes or comments..."></textarea>
+                    </div>
+
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi list-inline-item"></i> Add Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>       
+
+    <script>
+
+        //Send command: Open more actions C# form with two parameters
+        function editRecentRequest(command, id, pdfurl) {
+            window.chrome.webview.postMessage({
+                Command: command,
+                ControlSequence: id,
+                PdfURL: pdfurl
+            });
+        }
+
+
+        function validateAndFormatRequisition(input) {
+            const raw = input.value.trim();
+
+            // Acceptable relaxed input: S-YYYY/NNN
+            const relaxedPattern = /^S-?(\d{4})\/?(\d{3,})$/;
+            const strictPattern = /^S - \d{4} \/ \d{3,}$/;
+
+            const relaxedMatch = raw.match(relaxedPattern);
+
+            const errorDiv = document.getElementById("requisition_error");
+
+            if (relaxedMatch) {
+                // Reformat to strict visible format
+                const year = relaxedMatch[1];
+                const seq = relaxedMatch[2];
+                input.value = `S - ${year} / ${seq}`;
+                input.setCustomValidity("");
+                errorDiv.style.display = "none";
+            } else if (strictPattern.test(raw)) {
+                // Already strict
+                input.setCustomValidity("");
+                errorDiv.style.display = "none";
+            } else {
+                // Invalid format
+                input.setCustomValidity("Invalid format. Use: S - YYYY / NNN");
+                errorDiv.style.display = "block";
+            }
+        }
+
+        const select = document.getElementById('priority');
+        const priorityColors = {
+            Low: '#008000',
+            Normal: '#FFFF00',
+            High: '#FFA500',
+            Urgent: '#FF0000'
+        };
+
+        function updateBackgroundColor() {
+            const selectedValue = select.value;
+            select.style.backgroundColor = priorityColors[selectedValue] || 'transparent';
+        }
+
+        // Initial set
+        updateBackgroundColor();
+
+        // Update on change
+        select.addEventListener('change', updateBackgroundColor);
+
+        // Initialize DataTable with delete column
+        document.addEventListener('DOMContentLoaded', function () {
+            var requestsDataTable = $('#requestsTable').DataTable({
+                "paging": true, // Enable pagination
+                "lengthChange": true, // Show number of entries per page
+                "searching": true, // Enable search box
+                "ordering": true, // Enable column ordering
+                "info": true, // Show "Showing X of Y entries"
+                "autoWidth": false, // Disable auto width calculation for better control
+                "responsive": true, // Enable responsive design
+                "columnDefs": [
+                    {
+                        "targets": [0, 1], // These are the indices for customer_id and printcard_id
+                        "visible": false, // Make them hidden
+                        "searchable": false // Not searchable
+                    },
+                    {
+                        "targets": -1, // Actions column (last column)
+                        "className": "dt-center", // Center align the buttons
+                        "width": "100px" // Give fixed width to actions column
+                    }
+                    // Add more column definitions here if needed for other columns,
+                    // e.g., to disable sorting or set specific widths for visible columns.
+                ]
+            });
+            // --- General Variable Declarations (keep these at the top as they are now) ---
+            const modal = document.getElementById("requestModal");
+            const newRequestBtn = document.getElementById("newRequest");
+            const span = document.getElementsByClassName("close")[0];
+            const toolingRequestForm = document.getElementById('toolingRequestForm'); // The modal's form
+
+            // Main form elements
+            const loggedUsernameInput = document.getElementById('loggedUsername');
+            const requestOriginRadios = document.querySelectorAll('input[name="request_origin"]');
+            const dueDateInput = document.getElementById('due_date');
+            const requisitionNumberInput = document.getElementById('requisition_number');
+            const requestsTableBody = document.querySelector('#requestsTable tbody');
+            const requestTypeCheckboxes = document.querySelectorAll('input[name="request_type"]');
+            const checkboxGroupMain = document.querySelector('.checkbox-group');
+            const radioGroupMain = document.querySelector('.radio-group');
+
+            // Printcard Search Functionality
+            const printcardSearchInput = document.getElementById('printcardSearch');
+            const printcardSearchResultsDiv = document.getElementById('printcardSearchResults');
+            const selectedPrintcardIdField = document.getElementById('selectedPrintcardId');
+            const selectedPrintcardDisplay = document.getElementById('selectedPrintcardDisplay');
+            const printcardNameValue = document.getElementById('printcardNameValue');
+            let printcardSearchTimeout;
+
+            // Customer Search Functionality
+            const customerSearchInput = document.getElementById('customerSearch');
+            const customerSearchResultsDiv = document.getElementById('customerSearchResults');
+            const selectedCustomerIdField = document.getElementById('selectedCustomerId');
+            const selectedCustomerDisplay = document.getElementById('selectedCustomerDisplay');
+            const customerNameValue = document.getElementById('customerNameValue');
+            
+            let customerSearchTimeout;
+
+            const numColorsValue = document.getElementsByName("numColors")[0];
+
+            // --- Initial State and Event Listeners (as provided in previous response) ---
+            printcardSearchInput.disabled = true;
+            printcardSearchResultsDiv.innerHTML = '<div class="list-group-item text-muted">Please select a customer first.</div>';
+            printcardSearchResultsDiv.style.display = 'block';
+
+            if (newRequestBtn) {
+                newRequestBtn.disabled = false;
+            }
+
+            newRequestBtn.onclick = function () {
+
+                if (!originInternal.checked && !originExternal.checked) {
+                    toastr.error("You must set if this request is internal or external!", null, { positionClass: "toast-top-left" });
+                    if (!originInternal.checked) {
+                        originInternal.required = false;
+                    }
+                    return;
+                    
+                }
+
+                if (!request_type_rubberdie.checked && !request_type_diecut.checked) {
+                    toastr.error("You need to check the type of request, before adding an item.(Rubberdie/Diecut)", null, { positionClass: "toast-top-left" });                    
+                    if (!request_type_rubberdie.checked) {
+                        request_type_rubberdie.required = false;
+                    }
+                    return;
+                }                
+
+
+                modal.style.display = "block";
+                const now = new Date();
+                const pad = n => n.toString().padStart(2, '0');
+                const dueDate = new Date(now);
+                dueDate.setDate(dueDate.getDate() + 7);
+                const dueDateStr = dueDate.getFullYear() + '-' +
+                    pad(dueDate.getMonth() + 1) + '-' +
+                    pad(dueDate.getDate());
+                document.getElementById('due_date').value = dueDateStr;
+                updateModalHeader();
+                if (chrome.webview.hostObjects.requestsApi) {
+                    chrome.webview.hostObjects.requestsApi.SetSidebarEnabled(false);
+                }
+            };
+
+            span.onclick = function () {
+                modal.style.display = "none";
+                if (chrome.webview.hostObjects.requestsApi) {
+                    chrome.webview.hostObjects.requestsApi.SetSidebarEnabled(true);
+                }
+            };
+
+            const submitRequestMainBtn = document.getElementById("submitRequestMain");
+            submitRequestMainBtn.addEventListener('click', function (e) {
+                
+
+                e.preventDefault();
+                
+                if (!confirm("Are you sure you want to submit this request?")) {
+                    return; // Cancel submission
+                }
+
+                console.log("Main Submit Request button clicked!");               
+
+                //Table must at least have one item.
+                const requestsTable = $('#requestsTable').DataTable();
+                if (requestsTable.rows().count() === 0) {
+                    //alert('Please add at least one item to the request before submitting.');
+                    toastr.error("Please add at least one item to the request table before submitting.");
+                    return; // Prevent submission
+                }
+
+                let isValidMainForm = true;
+
+                if (requestsTableBody.rows.length === 0) {                    
+                    toastr.error('Please add at least one item to the request before submitting.');
+                    isValidMainForm = false;
+                }
+                
+                if (!loggedUsernameInput.value.trim()) {
+                    loggedUsernameInput.classList.add('is-invalid');
+                    isValidMainForm = false;
+                } else {
+                    loggedUsernameInput.classList.remove('is-invalid');
+                }
+
+                let isOriginSelected = false;
+                requestOriginRadios.forEach(radio => {
+                    if (radio.checked) {
+                        isOriginSelected = true;
+                    }
+                });
+                if (!isOriginSelected) {
+                    if (radioGroupMain) {
+                        radioGroupMain.style.borderColor = '#e74c3c';
+                    }                    
+                    toastr.alert('Please select a Request Origin (Internal/External).');
+                    isValidMainForm = false;
+                } else {
+                    if (radioGroupMain) {
+                        radioGroupMain.style.borderColor = '';
+                    }
+                }
+
+                if (!dueDateInput.value.trim()) {
+                    dueDateInput.classList.add('is-invalid');
+                    isValidMainForm = false;
+                } else {
+                    dueDateInput.classList.remove('is-invalid');
+                }
+
+                if (!requisitionNumberInput.value.trim()) {
+                    requisitionNumberInput.classList.add('is-invalid');
+                    isValidMainForm = false;
+                } else {
+                    requisitionNumberInput.classList.remove('is-invalid');
+                }
+
+                const selectedRequestTypes = document.querySelectorAll('input[name="request_type"]:checked');
+                if (selectedRequestTypes.length === 0) {
+                    if (checkboxGroupMain) {
+                        checkboxGroupMain.style.borderColor = '#e74c3c';
+                    }
+                    alert('Please select at least one Request Type.');
+                    isValidMainForm = false;
+                } else {
+                    if (checkboxGroupMain) {
+                        checkboxGroupMain.style.borderColor = '';
+                    }
+                }
+                
+
+                if (isValidMainForm) {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="bi bi-hourglass"></i> Submitting...';
+
+
+                    const requestData = collectRequestData();
+                    chrome.webview.hostObjects.requestsApi.InsertRequests(JSON.stringify(requestData));
+                    //(async () => {
+                    //    try {
+                    //        const result = await chrome.webview.hostObjects.requestsApi.InsertRequests(JSON.stringify(requestData));
+                    //        if (result) {
+                    //            console.log('InsertRequests completed!');
+                    //        } else {
+                    //            console.error('Insert failed.');
+                    //        }
+                    //    } catch (err) {
+                    //        console.error('Error calling InsertRequests:', err);
+                    //    }
+                    //})();
+
+                    setTimeout(() => {
+                        //alert('Main Request submitted successfully!');                        
+                        $('#requestsTable').DataTable().clear().draw();                        
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-send-fill"></i> Submit Request';
+
+                        document.querySelectorAll('input[name="request_origin"]').forEach(radio => {
+                            radio.disabled = false;
+                        });
+                        
+                        //window.chrome.webview.postMessage("InsertSuccess");
+                        editRecentRequest("InsertSuccess", requisitionNumber, "");
+                        
+                    }, 1500);
+
+
+
+                    const rubberdie = document.getElementById('request_type_rubberdie').checked;
+                    const diecutMould = document.getElementById('request_type_diecut').checked;
+                    var requisitionNumber = document.getElementById('requisition_number').value;
+
+                    if (rubberdie) {
+                        requisitionNumber += "R";
+                    }
+                    if (diecutMould) {
+                        requisitionNumber += "D";
+                    }
+
+                    
+
+                    //chrome.webview.addEventListener('message', event => {
+                    //    try {
+                    //        const data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+                    //        if (data.Command === "InsertSuccess") {
+                    //            console.log("Insert completed, now load PDF.");
+                    //            var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"
+                    //            editRecentRequest("InsertSuccess", requisitionNumber, httpbase);
+                    //            window.chrome.webview.hostObjects.requestsApi.OpenPDFReportInForm(httpbase);                                
+                    //        } else if (data.Command === "InsertFailed") {
+                    //            console.error("Insert failed.");
+                    //        }
+                    //    } catch (e) {
+                    //        console.error("Error parsing message from C#: ", e);
+                    //    }
+                    //});
+
+
+                    
+                    //if (window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.appBridge) {
+                    //    var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"
+                    //    window.chrome.webview.hostObjects.requestsApi.OpenPDFReportInForm(httpbase);
+                    //    toastr.success('PDF was generated successfully.');
+                    //} else {
+                    //    toastr.alert('PDF generation is not available.');
+                    //}
+                    //document.getElementById("requisition_number").value = ""; 
+
+                    
+                    //if (window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.appBridge) {
+                    //    var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"
+                    //    window.chrome.webview.hostObjects.requestsApi.OpenPDFReport(httpbase);                       
+                    //} else {                        
+                    //}                    
+                    
+                } else {
+                    alert('Please correct the errors on the main form before submitting.');
+                }
+            });
+            // --- MODIFIED: Modal Form "Add Item" Submission Logic ---
+            toolingRequestForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                console.log("Modal 'Add Item' button clicked!");
+                let isValidModalForm = true;
+
+                if (!selectedCustomerIdField.value) {
+                    isValidModalForm = false;
+                    customerSearchInput.classList.add('is-invalid');
+                } else {
+                    customerSearchInput.classList.remove('is-invalid');
+                }
+
+                //Check if number of colors field is visible and required
+                if (numColorsValue instanceof HTMLElement) {
+                    const style = window.getComputedStyle(numColorsValue);
+                    const isVisible = style.display !== "none" && style.visibility !== "hidden" && numColorsValue.offsetParent !== null;
+                    const isRequired = numColorsValue.hasAttribute("required");
+
+                    if (isVisible && isRequired) {
+                        const value = numColorsValue.value?.trim();
+                        if (!value) {
+                            console.log("Element is visible, required, but has no value:", value);
+                            isValidModalForm = false;
+                            numColorsValue.classList.add('is-invalid');
+                        } else {
+                            numColorsValue.classList.remove('is-invalid');
+                        }
+                    } else {
+                        console.log("Element is either not visible or not required.");
+                    }
+                } else {
+                    console.log("Element not found or is not an HTMLElement.");
+                }
+
+
+                const currentOrigin = document.querySelector('input[name="request_origin"]:checked')?.value;
+                if (currentOrigin === 'Internal' && !selectedPrintcardIdField.value) {
+                    isValidModalForm = false;
+                    printcardSearchInput.classList.add('is-invalid');
+                } else {
+                    printcardSearchInput.classList.remove('is-invalid');
+                }
+
+                // Collect all required fields for the modal
+                const requiredModalFields = [
+                    document.getElementById('quantity'),
+                    document.getElementById('unitType'),
+                    document.getElementById('numOuts')
+                    // Add any other fields you mark as 'required' in your modal HTML
+                ].filter(field => field !== null); // Filter out nulls if an ID doesn't exist
+
+                requiredModalFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        field.classList.add('is-invalid');
+                        isValidModalForm = false;
+                    } else {
+                        field.classList.remove('is-invalid');
+                    }
+                });
+
+                // Assuming these elements exist in your modal, check if they are required/valid here
+                // If they are not required, you don't need to add `is-invalid` class
+                const notesToPrinterInput = document.getElementById('notes_to_printer');
+                const itemNotesInput = document.getElementById('item_notes');
+                const poNumberInput = document.getElementById('po_number');
+
+                if (isValidModalForm) {
+                    const submitBtnModal = toolingRequestForm.querySelector('button[type="submit"]');
+                    submitBtnModal.disabled = true;
+                    submitBtnModal.innerHTML = '<i class="bi bi-hourglass"></i> Processing...';
+
+                    // --- Collect item data from modal fields ---
+                    const customerName = customerNameValue.textContent; // From selected customer display
+                    const customerId = document.getElementById('selectedCustomerId').value;
+                    const printcardId = document.getElementById('selectedPrintcardId').value;
+                    const quantity = document.getElementById('quantity').value;
+
+                    //const numColors = document.getElementById('numColors').value;
+                    let numberOfColors = 1;
+                    if (numColorsValue instanceof HTMLElement) {
+                        const style = window.getComputedStyle(numColorsValue);
+                        const isVisible = style.display !== "none" && style.visibility !== "hidden" && numColorsValue.offsetParent !== null;
+                        const isRequired = numColorsValue.hasAttribute("required");
+
+                        if (isVisible && isRequired) {
+                            const value = numColorsValue.value?.trim();
+                            if (value) {                                
+                                numberOfColors = value; 
+                            }
+                        }
+                    }
+
+                    const unit = document.getElementById('unitType').value;
+                    const numouts = document.getElementById('numOuts').value;
+                    const itemNotes = remarks ? remarks.value : '';
+                    let aprintcardDescription;
+
+                    if (currentOrigin === 'External') {
+                        aprintcardDescription = printcardId ? printcardNameValue.textContent : document.getElementById('requestDescription').value;
+                    } else {
+                        aprintcardDescription = printcardNameValue.textContent;                        
+                    }
+
+                    const newRowData = [
+                        customerId,
+                        printcardId,
+                        customerName,
+                        quantity,
+                        numberOfColors,
+                        unit,
+                        numouts,
+                        aprintcardDescription,
+                        itemNotes,
+                        '<div class="actions"><button class="btn btn-sm btn-info edit-row me-2"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-danger delete-row"><i class="bi bi-trash"></i></button></div>' // Actions column HTML
+                    ];
+
+                    $('#requestsTable').DataTable().row.add(newRowData).draw(false);
+
+
+                    document.querySelectorAll('input[name="request_origin"]').forEach(radio => {
+                        radio.disabled = true;
+                    });
+
+                    setTimeout(() => {
+                        const savedCustomerId = selectedCustomerIdField.value;
+                        const savedCustomerName = customerSearchInput.value;
+                        const savedCustomerDisplay = customerNameValue.textContent;
+                        const savedRemarks = remarks.value;
+
+                        toolingRequestForm.reset(); // Reset the modal form for next item
+                        // Restore customer info
+                        selectedCustomerIdField.value = savedCustomerId;
+                        customerSearchInput.value = savedCustomerName;
+                        customerNameValue.textContent = savedCustomerDisplay;
+                        selectedCustomerDisplay.style.display = 'block';
+                        customerSearchInput.classList.add('is-valid');
+                        remarks.value = savedRemarks;
+
+                        requestDescription.value = '';
+                     
+                        submitBtnModal.disabled = false;
+                        submitBtnModal.innerHTML = '<i class="bi list-inline-item"></i> Add Item'; // Restore button text
+                        //modal.style.display = "none"; // Close modal
+
+                        //if (chrome.webview.hostObjects.requestsApi) {
+                        //    chrome.webview.hostObjects.requestsApi.SetSidebarEnabled(true);
+                        //}
+                        toastr.success('Item successfully added!', null, { positionClass: "toast-top-center" });                        
+                    }, 500); // Reduced timeout for faster feedback
+                } else {                    
+                    toastr.error("Please fill in all required fields for the item.", null, { positionClass: "toast-top-center" });
+                    
+                }
+            });
+
+            // --- Search Function Implementations (as provided in previous response) ---
+            printcardSearchInput.addEventListener('keyup', function () {
+                clearTimeout(printcardSearchTimeout);
+                const query = this.value.trim();
+                const selectedCustomerId = selectedCustomerIdField.value;
+
+                if (!selectedCustomerId) {
+                    printcardSearchResultsDiv.style.display = 'none';
+                    printcardSearchResultsDiv.innerHTML = '<div class="list-group-item text-muted">Please select a customer first.</div>';
+                    printcardSearchResultsDiv.style.display = 'block';
+                    selectedPrintcardIdField.value = '';
+                    selectedPrintcardDisplay.style.display = 'none';
+                    printcardSearchInput.classList.remove('is-valid');
+                    printcardSearchInput.classList.remove('is-invalid');
+                    return;
+                }
+
+                if (query.length >= 2) {
+                    printcardSearchTimeout = setTimeout(() => {
+                        performPrintcardSearch(query, selectedCustomerId);
+                    }, 300);
+                } else {
+                    printcardSearchResultsDiv.style.display = 'none';
+                    printcardSearchResultsDiv.innerHTML = '';
+                    selectedPrintcardIdField.value = '';
+                    selectedPrintcardDisplay.style.display = 'none';
+                    printcardSearchInput.classList.remove('is-valid');
+                    printcardSearchInput.classList.remove('is-invalid');
+                }
+            });
+
+            async function performPrintcardSearch(query, customerId) {
+                if (!chrome.webview.hostObjects.requestsApi) {
+                    console.error("requestsApi not available. Cannot perform printcard search.");
+                    printcardSearchResultsDiv.innerHTML = '<div class="list-group-item text-danger">Error: requestsApi not found.</div>';
+                    printcardSearchResultsDiv.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const printcardsJsonString = await chrome.webview.hostObjects.requestsApi.SearchPrintcards(query, customerId);
+                    const parsedPrintcards = JSON.parse(printcardsJsonString);
+                    displayPrintcardResults(parsedPrintcards);
+                } catch (error) {
+                    console.error("Error searching printcards:", error);
+                    printcardSearchResultsDiv.innerHTML = '<div class="list-group-item text-danger">Error searching printcards.</div>';
+                    printcardSearchResultsDiv.style.display = 'block';
+                }
+            }
+
+            function collectRequestData() {
+                const table = $('#requestsTable').DataTable();
+                const rows = table.rows().data().toArray();
+                var Suffix = "";                
+
+                const requestOrigin = document.querySelector('input[name="request_origin"]:checked')?.value;
+                const requisitionNumber = document.getElementById('requisition_number').value;
+                const requestPriority = document.getElementById('priority').value;
+                const dueDate = document.getElementById('due_date').value;
+                const requestedDate = document.getElementById('requested_date').value;
+                const userName = document.getElementById('loggedUsername').value;
+                const userId = document.getElementById('loggedUserId').value;
+
+                const rubberdie = document.getElementById('request_type_rubberdie').checked;
+                const diecutMould = document.getElementById('request_type_diecut').checked;
+                const diecutType = document.getElementById('diecutType').value;
+                const negativeFilm = document.getElementById('request_type_film').checked;
+
+                const requestInternal = requestOrigin === 'Internal';
+                const requestExternal = requestOrigin === 'External';
+
+                if (rubberdie) {
+                    Suffix += "R";
+                }
+                if (diecutMould) {
+                    Suffix += "D";
+                }
+
+                var pdfUrl = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber + Suffix; +"&directDownload=true"
+
+                const mappedData = rows.map(row => ({
+                    customerId: parseInt(row[0]),
+                    printcardId: parseInt(row[1]),
+                    itemQuantity: parseInt(row[3]),
+                    itemColors: parseInt(row[4]),
+                    itemUnit: row[5],
+                    itemRemarks: row[8],
+                    rubberdie,
+                    diecutMould,
+                    diecutType,
+                    negativeFilm,
+                    requestInternal,
+                    requestExternal,
+                    requisitionNumber,
+                    dueDate,
+                    requestedDate,
+                    userId,
+                    ItemDescription: row[7],
+                    requestPriority,
+                    numOuts: row[6],
+                    pdfUrl
+                }));
+
+                return mappedData;
+            }
+
+
+            function displayPrintcardResults(printcards) {
+                printcardSearchResultsDiv.innerHTML = '';
+                if (printcards && printcards.length > 0) {
+                    printcards.forEach(printcard => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.classList.add('list-group-item', 'list-group-item-action');
+                        item.textContent = printcard.box_description;
+                        item.dataset.id = printcard.id;
+
+                        item.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            selectPrintcard(this.dataset.id, this.textContent);
+                        });
+                        printcardSearchResultsDiv.appendChild(item);
+                    });
+                    printcardSearchResultsDiv.style.display = 'block';
+                } else {
+                    const noResultsItem = document.createElement('div');
+                    noResultsItem.classList.add('list-group-item', 'text-muted');
+                    noResultsItem.textContent = 'No printcards found.';
+                    printcardSearchResultsDiv.appendChild(noResultsItem);
+                    printcardSearchResultsDiv.style.display = 'block';
+                }
+            }
+
+            function selectPrintcard(id, name) {
+                selectedPrintcardIdField.value = id;
+                printcardSearchInput.value = name;
+                printcardSearchResultsDiv.style.display = 'none';
+                printcardSearchResultsDiv.innerHTML = '';
+
+                printcardNameValue.textContent = name;
+                selectedPrintcardDisplay.style.display = 'block';
+
+                printcardSearchInput.classList.add('is-valid');
+                printcardSearchInput.classList.remove('is-invalid');
+            }
+
+            customerSearchInput.addEventListener('keyup', function () {
+                clearTimeout(customerSearchTimeout);
+                const query = this.value.trim();
+
+                if (query.length >= 3) {
+                    customerSearchTimeout = setTimeout(() => {
+                        performCustomerSearch(query);
+                    }, 300);
+                } else {
+                    customerSearchResultsDiv.style.display = 'none';
+                    customerSearchResultsDiv.innerHTML = '';
+                    selectedCustomerIdField.value = '';
+                    selectedCustomerDisplay.style.display = 'none';
+                    customerSearchInput.classList.remove('is-valid');
+                    customerSearchInput.classList.remove('is-invalid');
+                }
+            });
+
+            async function performCustomerSearch(query) {
+                if (!chrome.webview.hostObjects.requestsApi) {
+                    console.error("requestsApi not available. Cannot perform customer search.");
+                    customerSearchResultsDiv.innerHTML = '<div class="list-group-item text-danger">Error: requestsApi not found.</div>';
+                    customerSearchResultsDiv.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const customersJsonString = await chrome.webview.hostObjects.requestsApi.SearchCustomers(query);
+                    const parsedCustomers = JSON.parse(customersJsonString);
+                    displayCustomerResults(parsedCustomers);
+                } catch (error) {
+                    console.error("Error searching customers:", error);
+                    customerSearchResultsDiv.innerHTML = '<div class="list-group-item text-danger">Error searching customers.</div>';
+                    customerSearchResultsDiv.style.display = 'block';
+                }
+            }
+
+            function displayCustomerResults(customers) {
+                customerSearchResultsDiv.innerHTML = '';
+                if (customers && customers.length > 0) {
+                    customers.forEach(customer => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.classList.add('list-group-item', 'list-group-item-action');
+                        item.textContent = customer.organization_name;
+                        item.dataset.id = customer.id;
+
+                        item.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            selectCustomer(this.dataset.id, this.textContent);
+                        });
+                        customerSearchResultsDiv.appendChild(item);
+                    });
+                    customerSearchResultsDiv.style.display = 'block';
+                } else {
+                    customerSearchResultsDiv.innerHTML = '<div class="list-group-item text-muted">No customers found.</div>';
+                    customerSearchResultsDiv.style.display = 'block';
+                }
+            }
+
+            function selectCustomer(id, name) {
+                selectedCustomerIdField.value = id;
+                customerSearchInput.value = name;
+                customerSearchResultsDiv.style.display = 'none';
+                customerSearchResultsDiv.innerHTML = '';
+
+                customerNameValue.textContent = name;
+                selectedCustomerDisplay.style.display = 'block';
+
+                customerSearchInput.classList.add('is-valid');
+                customerSearchInput.classList.remove('is-invalid');
+
+                selectedPrintcardIdField.value = '';
+                printcardSearchInput.value = '';
+                printcardSearchInput.classList.remove('is-valid');
+                printcardSearchInput.classList.remove('is-invalid');
+                printcardSearchResultsDiv.style.display = 'none';
+                printcardSearchResultsDiv.innerHTML = '';
+                selectedPrintcardDisplay.style.display = 'none';
+                printcardSearchResultsDiv.innerHTML = '<div class="list-group-item text-muted">Enter at least 2 characters to search for printcards for the selected customer.</div>';
+                printcardSearchResultsDiv.style.display = 'block';
+                printcardSearchInput.disabled = false;
+            }
+
+            customerSearchInput.addEventListener('input', function () {
+                if (!this.value.trim()) {
+                    selectedCustomerIdField.value = '';
+                    selectedCustomerDisplay.style.display = 'none';
+                    customerSearchInput.classList.remove('is-valid');
+                    customerSearchInput.classList.remove('is-invalid');
+
+                    selectedPrintcardIdField.value = '';
+                    printcardSearchInput.value = '';
+                    printcardSearchInput.classList.remove('is-valid');
+                    printcardSearchInput.classList.remove('is-invalid');
+                    printcardSearchResultsDiv.style.display = 'none';
+                    printcardSearchResultsDiv.innerHTML = '';
+                    selectedPrintcardDisplay.style.display = 'none';
+                    printcardSearchResultsDiv.innerHTML = '<div class="list-group-item text-muted">Please select a customer first.</div>';
+                    printcardSearchResultsDiv.style.display = 'block';
+                    printcardSearchInput.disabled = true;
+                }
+            });
+
+            document.querySelectorAll('[required]').forEach(field => {
+                field.addEventListener('input', function () {
+                    if (this.value.trim()) {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.remove('is-valid');
+                    }
+                });
+                field.addEventListener('blur', function () {
+                    if (!this.value.trim()) {
+                        this.classList.add('is-invalid');
+                    }
+                });
+            });
+
+            function updateRealTimeDate() {
+                const now = new Date();
+                const day = String(now.getDate()).padStart(2, '0');
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const year = now.getFullYear();
+                let hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+
+                const formattedDate = `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+                document.getElementById('requested_date').value = formattedDate;
+            }
+
+            updateRealTimeDate();
+            setInterval(updateRealTimeDate, 1000);
+
+            window.setLoggedUsername = function (username) {
+                const loggedUserInput = document.getElementById('loggedUsername');
+                if (loggedUserInput) {
+                    loggedUserInput.value = username;
+                    loggedUserInput.readOnly = true;
+                }
+            };
+
+            window.setLoggedUserId = function (userId) {
+                const loggedUserInput = document.getElementById('loggedUserId');
+                if (loggedUserInput) {
+                    loggedUserInput.value = userId;
+                    loggedUserInput.readOnly = true;
+                }
+            };
+
+            function updateModalHeader() {
+                const modalTitle = document.querySelector('#requestModal h4');
+                const selectedOrigin = document.querySelector('input[name="request_origin"]:checked');
+                const printcardSearchLabel = document.querySelector('label[for="printcardSearch"]');
+                const printcardSearchInput = document.getElementById('printcardSearch');
+                const requestDescriptionField = document.getElementById('requestDescription');
+                const requestDescriptionGroup = requestDescriptionField.closest('.form-group');
+
+                let headerText = '<i class="fas fa-list"></i> Add New Item';
+
+                if (selectedOrigin) {
+                    const originValue = selectedOrigin.value;
+                    modalTitle.innerHTML = `${headerText} - ${originValue}`;
+
+                    if (originValue === 'External') {
+                        // External origin - make printcard optional and show description field
+                        if (printcardSearchLabel) {
+                            printcardSearchLabel.innerHTML = 'Printcard (Optional)';
+                            printcardSearchInput.removeAttribute('required');
+                        }
+
+                        // Show and make description field required
+                        requestDescriptionGroup.hidden = false;
+                        requestDescriptionField.setAttribute('required', 'required');
+
+                        // If printcard is selected, copy its description to the textarea if empty
+                        const printcardName = printcardNameValue.textContent;
+                        if (printcardName && !requestDescriptionField.value.trim()) {
+                            requestDescriptionField.value = printcardName;
+                        }
+                    } else {
+                        // Internal origin - make printcard required and hide description field
+                        if (printcardSearchLabel) {
+                            printcardSearchLabel.innerHTML = 'Printcard <span class="required">*</span>';
+                            printcardSearchInput.setAttribute('required', 'required');
+                        }
+
+                        // Hide and remove requirement from description field
+                        requestDescriptionGroup.hidden = true;
+                        requestDescriptionField.removeAttribute('required');
+                        requestDescriptionField.value = ''; // Clear the field
+                    }
+                } else {
+                    // Default to Internal behavior if no origin selected
+                    modalTitle.innerHTML = headerText;
+                    if (printcardSearchLabel) {
+                        printcardSearchLabel.innerHTML = 'Printcard <span class="required">*</span>';
+                        printcardSearchInput.setAttribute('required', 'required');
+                    }
+                    requestDescriptionGroup.hidden = true;
+                    requestDescriptionField.removeAttribute('required');
+                    requestDescriptionField.value = ''; // Clear the field
+                }
+            }
+
+            printcardSearchResultsDiv.addEventListener('click', function (e) {
+                const selectedOrigin = document.querySelector('input[name="request_origin"]:checked');
+                if (selectedOrigin && selectedOrigin.value === 'External') {
+                    const printcardName = printcardNameValue.textContent;
+                    const requestDescriptionField = document.getElementById('requestDescription');
+                    if (printcardName && !requestDescriptionField.value.trim()) {
+                        requestDescriptionField.value = printcardName;
+                    }
+                }
+            });
+
+            // Add event delegation for delete buttons
+            $('#requestsTable tbody').on('click', '.delete-row', function () {
+                var row = $(this).closest('tr');
+                var rowData = requestsDataTable.row(row).data();
+
+                // Confirm deletion
+                if (confirm('Are you sure you want to delete this item?')) {
+                    requestsDataTable.row(row).remove().draw();
+
+                    if (requestsDataTable.rows().count() === 0) {
+                        document.querySelectorAll('input[name="request_origin"]').forEach(radio => {
+                            radio.disabled = false;
+                        });
+                    }                                        
+                    toastr.success("Item deleted successfully!", null, { positionClass: "toast-top-center" });
+                }
+            });
+
+            document.querySelectorAll('input[name="request_origin"]').forEach(radio => {
+                radio.addEventListener('change', updateModalHeader);
+            });
+
+            updateModalHeader();
+
+            const prioritySelect = document.getElementById('priority');
+            function setPriorityBg() {
+                prioritySelect.classList.remove('priority-low', 'priority-normal', 'priority-high', 'priority-urgent');
+                switch (prioritySelect.value) {
+                    case 'Low':
+                        prioritySelect.classList.add('priority-low');
+                        break;
+                    case 'Normal':
+                        prioritySelect.classList.add('priority-normal');
+                        break;
+                    case 'High':
+                        prioritySelect.classList.add('priority-high');
+                        break;
+                    case 'Urgent':
+                        prioritySelect.classList.add('priority-urgent');
+                        break;
+                }
+            }
+            setPriorityBg();
+            prioritySelect.addEventListener('change', setPriorityBg);
+
+            //Diecut type
+            const checkbox = document.getElementById("request_type_diecut");
+            const diecutWrapper = document.getElementById("diecutTypeWrapper");            
+            const diecutSelect = document.getElementById("diecutType");
+            
+
+            checkbox.addEventListener("change", function () {
+                if (this.checked) {
+                    diecutWrapper.style.display = "flex";
+                    diecutSelect.disabled = false;
+                } else {
+                    diecutWrapper.style.display = "none";
+                    diecutSelect.disabled = true;
+                }
+            });
+
+            //request_type_rubberdie
+            const numColorsInput = document.getElementById("numColors");
+            const numColorsWrapper = document.getElementById("numColorsWrapper");
+            const rubberdieCheck = document.getElementById("request_type_rubberdie");
+
+            rubberdieCheck.addEventListener("change", function () {
+                if (this.checked) {
+                    numColorsWrapper.style.display = "flex";
+                    numColorsInput.disabled = false;
+                    numColorsInput.required = true;
+                } else {
+                    numColorsWrapper.style.display = "none";
+                    numColorsInput.disabled = true;
+                    numColorsInput.required = false;
+                }
+            });
+
+            if (!rubberdieCheck.checked) {
+                numColorsWrapper.style.display = "none";
+                numColorsInput.disabled = true;
+                numColorsInput.required = false;
+            }
+    
+        }); // End of the single DOMContentLoaded listener
+
+        //Make sure submission is successful or give an error message.
+        window.chrome.webview.addEventListener('message', event => {
+            const message = event.data;
+
+            if (message === "InsertSuccess") {
+                toastr.success("Request successfully saved to database.", null, { positionClass: "toast-top-center" });
+                $('#requestsTable').DataTable().clear().draw();
+                document.querySelectorAll('input[name="request_origin"]').forEach(radio => {
+                    radio.disabled = false;
+                    document.getElementById('requisition_number').value = '';
+                    submitRequestMainBtn.disabled = false;
+                    submitRequestMainBtn.innerHTML = '<i class="bi bi-send-fill"></i> Submit Request'
+                });
+            } else if (message === "InsertFailed") {
+                toastr.error("Failed to save request. Please try again.", null, { positionClass: "toast-top-center" });
+                submitRequestMainBtn.disabled = false;
+                submitRequestMainBtn.innerHTML = '<i class="bi bi-send-fill"></i> Submit Request'
+
+            }
+        });        
+
+        function updateControlNumber(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = value;    
+            } else {
+                console.warn(`Element with ID '${elementId}' not found.`);
+            }
+        }
+
+  
+    </script>
+    
+</body>
+</html>

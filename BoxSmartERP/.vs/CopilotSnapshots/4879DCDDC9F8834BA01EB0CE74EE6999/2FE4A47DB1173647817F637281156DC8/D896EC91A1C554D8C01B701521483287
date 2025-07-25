@@ -1,0 +1,158 @@
+﻿using BoxSmart_ERP.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Web.WebView2.Core;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Diagnostics;
+using System.Drawing;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using static BoxSmart_ERP.Services.PostgreSQLServices;
+
+namespace BoxSmart_ERP
+{
+    public partial class NewRequest : Form
+    {
+        // P/Invoke declarations for moving the window
+        public const int WM_NCLBUTTONDOWN = 0xA1;
+        public const int HT_CAPTION = 0x2;
+
+        [DllImport("user32.dll")]
+        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
+
+        [DllImport("user32.dll")]
+        public static extern bool ReleaseCapture();
+
+        private readonly PostgreSQLServices _dbService;
+        private readonly InfoTech _machineService;
+        private readonly IConfiguration _config;
+
+        public NewRequest(IConfiguration config)
+        {
+            InitializeComponent();
+            _config = config;
+            string sqlServer = _config["ConnectionStrings:SQLServer"];
+            string sqlDbName = _config["ConnectionStrings:SQLDbName"];
+            Config.SQLStringConnection = $"Data Source={sqlServer},1433;" +
+                                         $"Initial Catalog={sqlDbName};" +
+                                         "TrustServerCertificate=True;" +
+                                         "Integrated Security=True;";
+
+            //PostgresConn
+            Config.PostgreSQLConnection = _config["ConnectionStrings:PostgresConn"];
+            string connectionString = Config.PostgreSQLConnection;
+            _dbService = new PostgreSQLServices(connectionString);
+            _machineService = new InfoTech(Config.SQLStringConnection);
+            InitializeWebControl();
+
+        }
+
+        private async void InitializeWebControl()
+        {
+            //Topbar
+            Panel panelMoveWindow = new()
+            {
+                Size = new Size(773, 36),
+                Location = new Point(258, 0)
+            };
+            this.Controls.Add(panelMoveWindow);
+            panelMoveWindow.Visible = false;
+            panelMoveWindow.BringToFront();
+            panelMoveWindow.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panelMoveWindow.BackColor = ColorTranslator.FromHtml("#3F4144");
+            panelMoveWindow.Show();
+            panelMoveWindow.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    ReleaseCapture();
+                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                }
+            };
+            await webViewTitlebar.EnsureCoreWebView2Async(null);
+            webViewTitlebar.CoreWebView2.WebMessageReceived += webViewTitlebar_WebMessageReceived;
+            string htmlFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/NewRequestTitlebar.html");
+            webViewTitlebar.Source = new Uri(htmlFilePath);
+
+
+            await webViewRequests.EnsureCoreWebView2Async(null);
+
+            string closeHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/NewRequest.html");
+            webViewRequests.Source = new Uri(closeHTMLPath);
+        }
+
+
+        private void webViewTitlebar_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            try
+            {
+                string message = e.WebMessageAsJson;
+
+                if (message.Contains("btMinimizeClicked"))
+                    this.WindowState = FormWindowState.Minimized;
+                else if (message.Contains("btMaximizeClicked"))
+                {
+                    this.WindowState = this.WindowState == FormWindowState.Maximized
+                        ? FormWindowState.Normal
+                        : FormWindowState.Maximized;
+                }
+                else if (message.Contains("btCloseClicked"))
+                    this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error processing message: " + ex.Message);
+            }
+        }
+
+        private async void webViewRequests_NavigationCompleted(object sender, CoreWebView2NavigationCompletedEventArgs e)
+        {
+            string currentUsername = AppSession.CurrentUsername;
+            string currentFullName = AppSession.CurrentFullName;
+            int currentUserId = AppSession.CurrentUserId;
+            string escapedUsername = currentUsername?.Replace("'", "\\'").Replace("\\", "\\\\") ?? "";
+            string script = $"setLoggedUsername('{escapedUsername}');";
+            await webViewRequests.CoreWebView2.ExecuteScriptAsync(script);
+
+            script = $"setLoggedUserId('{currentUserId}');";
+            await webViewRequests.CoreWebView2.ExecuteScriptAsync(script);
+
+            await webViewRequests.EnsureCoreWebView2Async(null); // Ensure initialized if not already
+            webViewRequests.CoreWebView2.AddHostObjectToScript("requestsApi", _dbService);
+            TSDMetrics dashboardMetrics = new(); // Initialize DTO 
+
+            try
+            {
+                // Call the updated GetPrintcardData method
+                dashboardMetrics = _dbService.GetPrintcardSummaryMetrics();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error fetching requests data: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                // dashboardMetrics will retain default (0,0) in case of error, ensuring JavaScript still gets numbers
+            }
+            string nextControlNumber = "";
+            if (!dashboardMetrics.NextControlNumber.Contains(' '))
+            {
+                int currentYear = DateTime.Now.Year;
+                nextControlNumber = $"S - {currentYear} / {dashboardMetrics.NextControlNumber}";
+            }
+            else { 
+                nextControlNumber = dashboardMetrics.NextControlNumber; // Use the original value if it contains a space
+            }
+
+            await webViewRequests.CoreWebView2.ExecuteScriptAsync($"updateControlNumber('requisition_number', {nextControlNumber});");
+            // Pass the data to JavaScript
+            _dbService.OnMessageToWebView += (message) =>
+            {
+                webViewRequests.CoreWebView2.PostWebMessageAsString(message);
+            };
+
+        }
+    }
+}

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>More Actions</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+    <link rel="stylesheet" href="./bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/select/1.7.0/css/select.dataTables.min.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/select/1.7.0/js/dataTables.select.min.js"></script>
+    <link rel="stylesheet" href="custom-scrollbars.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <link rel="stylesheet" href="css/NewRequest.css" />
+
+
+</head>
+<body>
+    <div class="container">
+
+        <div class="requests-header" id="headerText1">
+            <h2><i class="bi bi-activity"></i></h2>
+        </div>
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        </div>
+        <div class="menu-separator"></div>
+        <div class="top-form-fields">
+
+            <div class="form-group">
+                <label for="requestOrigin" class="form-label">Origin:<span class="required"></span></label>
+                <input type="text" class="form-control" id="requestOrigin" name="requestOrigin" required readonly>
+            </div>
+
+
+            <div class="form-group">
+                <label for="due_date" class="form-label">Due Date <span class="required">*</span></label>
+                <input type="text" class="form-control" id="due_date" name="due_date" required readonly>
+            </div>
+
+
+            <div class="form-group">
+                <label for="requested_date" class="form-label">Requested Date <span class="required">*</span></label>
+                <input type="text" class="form-control" id="requested_date" name="requested_date" readonly>
+            </div>
+
+            <div class="form-group">
+                <!--<label for="loggedUsername" class="form-label">Logged user:<span class="required">*</span></label>-->
+                <input type="hidden" class="form-control" id="loggedUsername" name="loggedUsername" maxlength="50" required readonly>
+                <input type="hidden" class="form-control" id="loggedUserId" name="loggedUserId" maxlength="3" required readonly>
+            </div>
+
+        </div>
+
+        <div class="form-group" style="display: flex; align-items: flex-end; gap: 24px;">
+            <div style="flex: 1;">
+                <label class="form-label">Request Type <span class="required">*</span></label>
+                <div class="checkbox-group">
+                    <label for="request_type_rubberdie">
+                        <input type="checkbox" id="request_type_rubberdie" name="request_type" value="Rubberdie" disabled>
+                        Rubberdie
+                    </label>
+                    <label for="request_type_diecut">
+                        <input type="checkbox" id="request_type_diecut" name="request_type" value="Diecut Mould" disabled>
+                        Diecut Mould
+                    </label>
+                </div>
+            </div>
+
+            <div style="flex: 1;">
+                <label for="userSearch" class="form-label">Assign to: <span class="required">*</span></label>
+                <input type="text" id="userSearch" class="form-control" placeholder="Search by username..." required>
+                <input type="hidden" id="selectedUserId" name="user_id">
+                <input type="hidden" id="requisition_number" name="requisition_number">
+                <div id="userSearchResults" class="list-group"></div>
+                <small id="selectedUserDisplay" class="form-text text-muted" style="display: none; margin-top: 5px;">Personnel selected: <strong id="userNameValue"></strong></small>
+            </div>
+
+        </div>
+
+        <div class="menu-separator"></div>
+        <div class="table-container">
+
+            <div class="table-responsive">
+                <table id="requestsTable" class="display" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th>request_id</th>                            
+                            <th>Customer</th>
+                            <th>Quantity</th>
+                            <th>Unit</th>
+                            <th>Outs</th>
+                            <th>Description</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+        <div class="text-end">
+            <button type="submit" class="btn btn-primary" id="submitRequestMain">
+                <i class="bi bi-send-fill"></i> Update Request
+            </button>
+        </div>
+
+    </div>
+    
+    <script type="text/javascript" src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+
+    <script>
+        let RequestDataTable;
+        
+        function initializeDataTable() {
+            if ($.fn.dataTable.isDataTable('#requestsTable')) {
+                $('#requestsTable').DataTable().clear().destroy();
+                $('#requestsTable tbody').empty();
+            }
+
+            RequestDataTable = $('#requestsTable').DataTable({
+                processing: true, // Show processing indicator
+                //serverSide: true, // Enable server-side processing
+                ajax: async function (data, callback, settings) {
+                    if (!chrome.webview.hostObjects.requestsApi) {
+                        callback({ data: [] });
+                        return;
+                    }
+                    try {
+                        const requisitionNumber = window.requisitionNumber || '';
+                        const jsonData = await chrome.webview.hostObjects.requestsApi.GetRequestsDataTable(requisitionNumber);
+                        console.log(requisitionNumber);
+                        const response = JSON.parse(jsonData);
+
+                        if (response.error) {
+                            callback({ data: [] });
+                            return;
+                        }
+                        callback({
+                            draw: data.draw,
+                            recordsTotal: response.recordsTotal || response.data.length,
+                            recordsFiltered: response.recordsFiltered || response.data.length,
+                            data: response.data
+                        });
+                    } catch (e) {
+                        console.error("Error calling C# or parsing JSON:", e);
+                        callback({ data: [] });
+                    }
+                }, // request_id,co.organization_name as customer_name, quantity, u.uom_code as unit, num_outs as outs, item_description as description,
+                 //design_notes as item_remarks, rubberdie, diecut,
+                  //_internal_, _external_, assigned_to
+                columns: [
+                    { data: 'requestId', visible: false },                    
+                    { data: 'customerName' },
+                    { data: 'quantity' },
+                    { data: 'uomId' },
+                    { data: 'numOuts' },
+                    { data: 'itemDescription' },
+                    { data: 'itemRemarks' }                 
+                ],
+                scrollY: '100%',        // Enable vertical scrolling
+                scrollCollapse: true, // Enable scroll collapse
+                paging: false,
+                lengthMenu: [10, 25, 50, 100],              
+                searching: false, // Enable search box
+                ordering: true, // Enable column ordering (DataTables will send order params to server)
+                info: true, // Show "Showing X of Y entries" info
+                responsive: true // Make table responsive
+                // You might also want to implement server-side ordering (via 'order' parameter in data.order)
+                // This would involve modifying your C# query to include ORDER BY based on DataTables' request.        
+            });
+        }
+
+        function updateElementValue(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = `<h3><i class="bi bi-wrench-adjustable-circle"></i><strong>Control #: <u>${value}</u> Configuration </strong></h3>`;
+            } else {
+                console.warn(`Element with ID '${elementId}' not found.`);
+            }
+        }
+
+        function updateOtherElementValue(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                if (element.tagName === "INPUT" || element.tagName === "TEXTAREA") {
+                    element.value = value;
+                } else {
+                    element.innerText = value;
+                }
+            }
+        }
+
+        function toggleElement(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element && element.type === "checkbox") {
+                element.checked = value;
+            } else if (element && element.type == "radio") {
+                element.toggleAttribute = value;
+            }
+        }
+
+        //user search and selection
+        const userSearchInput = document.getElementById('userSearch');
+        const userSearchResultsDiv = document.getElementById('userSearchResults');
+        const selectedUserIdField = document.getElementById('selectedUserId');        
+        const selectedUserDisplay = document.getElementById('selectedUserDisplay');
+        let userSearchTimeout;
+
+        document.addEventListener('DOMContentLoaded', function () {
+
+            userSearchInput.addEventListener('keyup', function () {
+                clearTimeout(userSearchTimeout);
+                const query = this.value.trim();
+                const selectedUserId = selectedUserIdField.value;
+
+                if (query.length >= 2) {
+                    userSearchTimeout = setTimeout(() => {
+                        performUserSearch(query, selectedUserId);
+                    }, 300);
+                } else {
+                    userSearchResultsDiv.style.display = 'none';
+                    userSearchResultsDiv.innerHTML = '';
+                    selectedUserIdField.value = '';
+                    selectedUserDisplay.style.display = 'none';
+                    userSearchInput.classList.remove('is-valid');
+                    userSearchInput.classList.remove('is-invalid');
+                }
+            });
+
+            async function performUserSearch(query) {
+                if (!chrome.webview.hostObjects.requestsApi) {
+                    console.error("requestsApi not available. Cannot perform user search.");
+                    userSearchResultsDiv.innerHTML = '<div class="list-group-item text-danger">Error: requestsApi not found.</div>';
+                    userSearchResultsDiv.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const userJsonString = await chrome.webview.hostObjects.requestsApi.SearchUsers(query);
+                    const parsedUsers = JSON.parse(userJsonString);
+                    displayUserResults(parsedUsers);
+                } catch (error) {
+                    console.error("Error searching users:", error);
+                    userSearchResultsDiv.innerHTML = '<div class="list-group-item text-danger">Error searching users.</div>';
+                    userSearchResultsDiv.style.display = 'block';
+                }
+            }
+
+            function displayUserResults(users) {
+                userSearchResultsDiv.innerHTML = '';
+                if (users && users.length > 0) {
+                    users.forEach(users => {
+                        const item = document.createElement('a');
+                        item.href = '#';
+                        item.classList.add('list-group-item', 'list-group-item-action');
+                        item.textContent = users.fullname;
+                        item.dataset.id = users.id;
+
+                        item.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            selectUser(this.dataset.id, this.textContent);
+                        });
+                        userSearchResultsDiv.appendChild(item);
+                    });
+                    userSearchResultsDiv.style.display = 'block';
+                } else {
+                    const noResultsItem = document.createElement('div');
+                    noResultsItem.classList.add('list-group-item', 'text-muted');
+                    noResultsItem.textContent = 'No users found.';
+                    userSearchResultsDiv.appendChild(noResultsItem);
+                    userSearchResultsDiv.style.display = 'block';
+                }
+            }
+
+            function selectUser(id, name) {
+                selectedUserIdField.value = id;
+                userSearchInput.value = name;
+                userSearchResultsDiv.style.display = 'none';
+                userSearchResultsDiv.innerHTML = '';
+
+                userNameValue.textContent = name;
+                selectedUserDisplay.style.display = 'block';
+
+                userSearchInput.classList.add('is-valid');
+                userSearchInput.classList.remove('is-invalid');
+            }    
+
+            //Routine to update request
+            const submitRequestMainBtn = document.getElementById("submitRequestMain");
+            submitRequestMainBtn.addEventListener('click', function (e) {
+
+                e.preventDefault();
+
+                if (!confirm("Are you sure you want to update this request?")) {
+                    return; // Cancel submission
+                }
+
+                console.log("Main Submit Request button clicked!");
+               
+                let isValidMainForm = true;     
+
+                if (!userSearch.value.trim()) {
+                    userSearch.classList.add('is-invalid');
+                    isValidMainForm = false;
+                } else {
+                    userSearch.classList.remove('is-invalid');
+                }
+
+                const userSearchInput = document.getElementById('userSearch');
+                if (!userSearchInput.value.trim()) {
+                    // The input is empty
+                    console.log("userSearch is empty");
+                    isValidMainForm = false;
+                    toastr.error("You need to assign a person for this job request.");
+                    return;
+                } else {
+                    // The input has a value
+                    console.log("userSearch has a value:", userSearchInput.value);
+                }
+
+
+                if (isValidMainForm) {
+                    this.disabled = true;
+                    this.innerHTML = '<i class="bi bi-hourglass"></i> Submitting...';
+
+                    const requisitionNumber = document.getElementById("requisition_number").value;
+                    console.log(requisitionNumber);
+                    const selectedUserId = parseInt(document.getElementById("selectedUserId").value, 10);
+                    console.log(selectedUserId);
+                    const requestInDevelopment = "In Development";
+                    console.log(requestInDevelopment);
+
+                    if (chrome.webview && chrome.webview.hostObjects && chrome.webview.hostObjects.requestsApi) {
+                        console.log("requestsApi is working...");                        
+                        chrome.webview.hostObjects.requestsApi.UpdateRequestStatus(requisitionNumber, selectedUserId, requestInDevelopment)
+                            .then(() => console.log("C# method called"))
+                            .catch(err => console.error("Error calling C# method:", err));
+                    } else {
+                        console.error("requestsApi not available");
+                    }                    
+
+                    setTimeout(() => {
+                        //alert('Main Request submitted successfully!');
+                        toastr.success('Requested item(s) successfully updated...');                                                
+                        this.disabled = false;
+                        this.innerHTML = '<i class="bi bi-send-fill"></i> Update Request';
+                    }, 1500);
+                    // Post a message to C# backend
+                    window.chrome.webview.postMessage("updateSuccess");
+                } else {
+                    alert('Please correct the errors on the main form before submitting.');
+                }
+            });
+
+        });       
+
+    </script>
+    
+</body>
+</html>

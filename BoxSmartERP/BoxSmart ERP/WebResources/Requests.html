@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tooling Requests</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/2.0.8/css/dataTables.dataTables.min.css">
+    <script type="text/javascript" src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+
+    <link rel="stylesheet" href="./bootstrap-icons/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="custom-scrollbars.css">
+    <link rel="stylesheet" href="css/Requests.css" />
+
+    <!--<link rel="stylesheet" href="https://cdn.datatables.net/select/2.0.2/css/select.dataTables.min.css">-->
+
+    <style>
+        /* Add any necessary styles for your filter controls here */
+        .filter-controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+            .filter-controls label {
+                white-space: nowrap;
+            }
+
+            .filter-controls select,
+            .filter-controls button {
+                padding: 8px 12px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+            }
+        /* Optional: Add a max-width to the container if it's not already constrained */
+        .container {
+            max-width: 100%; /* Ensures container doesn't exceed viewport */
+            overflow-x: hidden; /* Hides horizontal overflow of the container itself */
+        }
+
+        .requestsTable tbody tr.selected {
+            background-color: #d0ebff !important; /* Light blue */
+        }
+        /* Prevent clicks on disabled links */
+        .disabled-item {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        /* Dark Theme Select Dropdown */
+        .action-select {
+            background-color: #2c2f33;
+            color: #f1f1f1;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.875rem;
+            min-width: 160px;
+        }
+
+            /* On hover or focus */
+            .action-select:hover,
+            .action-select:focus {
+                border-color: #5fa8d3;
+                outline: none;
+                background-color: #3a3d42;
+            }
+
+            /* Disabled options */
+            .action-select option:disabled {
+                color: #888;
+                background-color: #2c2f33;
+            }
+    </style>
+</head>
+<body>
+    <div class="container">
+
+        <div class="requests-header">
+            <h1><i class="bi bi-clipboard-data"></i> Tooling Requests</h1>
+            <p class="lead">All Printcard, Rubberdie, and Diecut requests</p>
+        </div>
+
+        <div class="filter-controls">
+            <label for="yearSelect">Year:</label>
+            <select id="yearSelect" class="form-control"></select>
+
+            <label for="monthSelect">Month:</label>
+            <select id="monthSelect" class="form-control">
+                <option value="">All</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <button id="loadDataButton" class="btn btn-primary">Load Data</button>            
+        </div>
+        <div class="table-container">
+            <table id="requestsTable" class="display responsive nowrap" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Actions</th>
+                        <th>Requisition No.</th>
+                        <th>Status</th>
+                        <th>Printcard #</th>
+                        <th>Requested date</th>
+                        <th>Due Date</th>
+                        <th>Assigned To</th>
+                        <th>Approval Date</th>
+                        <th>Completion Date</th>
+                        <th>Customer</th>
+                        <th>Diecut</th>
+                        <th>Rubberdie</th>
+                        <th>Quantity</th>
+                        <th>Created By</th>
+                        <th>Outs</th>
+                        <th>UOM</th>
+                        <th>Description</th>
+                        <th>Remarks</th>
+                        <th>Origin</th>
+                        <th>Priority</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>            
+
+        </div>
+
+        <script>
+            let requestsDataTable;
+            let currentYearFilter = new Date().getFullYear().toString(); // Default to current year
+            let currentMonthFilter = ''; // Default to all months
+            let selectedrequestsId = null; // Variable to store
+
+            //Send command: Open more actions C# form
+            function sendMessageToHost(action) {
+                window.chrome.webview.postMessage(action);
+
+                document.querySelectorAll('.menu-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                // 'event.target' might be the 'i' tag if clicked directly on icon.
+                // Traverse up to find the button parent.
+                let clickedButton = event.target.closest('.menu-button');
+                if (clickedButton) {
+                    clickedButton.classList.add('active');
+                }
+            }
+            //Send command: Open more actions C# form with two parameters
+            function editRecentRequest(command, id, pdfurl) {                
+                window.chrome.webview.postMessage({
+                    Command: command,
+                    ControlSequence: id,
+                    PdfURL: pdfurl
+                });                
+            }
+
+            // Populate year dropdown
+            function populateYearSelect() {
+                const yearSelect = document.getElementById('yearSelect');
+                const currentYear = new Date().getFullYear();
+                for (let i = currentYear; i >= currentYear - 25; i--) { // Last 10 years
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    yearSelect.appendChild(option);
+                }
+                yearSelect.value = currentYear; // Set default selection
+            }
+
+            function initializeDataTable() {
+                if (requestsDataTable) {
+                    requestsDataTable.destroy();
+                    $('#requestsTable tbody').empty(); // Clear existing rows
+                }
+
+                requestsDataTable = $('#requestsTable').DataTable({
+                    processing: true, // Show processing indicator
+                    serverSide: true, // Enable server-side processing
+                    ajax: async function (data, callback, settings) {
+                        if (!chrome.webview.hostObjects.requestsApi) {
+                            console.error("requestsApi not available. Cannot fetch data.");
+                            callback({
+                                draw: data.draw,
+                                recordsTotal: 0,
+                                recordsFiltered: 0,
+                                data: []
+                            });
+                            return;
+                        }
+
+                        console.log('DataTables AJAX request data:', data);                                            
+
+                        try {
+                            const dtRequest = {
+                                draw: data.draw,
+                                start: data.start,
+                                length: data.length,
+                                orderColumn: data.order.length > 0 ? data.columns[data.order[0].column].data : 'requested_date',
+                                orderDir: data.order.length > 0 ? data.order[0].dir : 'desc',
+                                searchValue: data.search.value, // Global search value
+
+                                // Custom filters from your select boxes
+                                year: document.getElementById('yearSelect').value,
+                                month: document.getElementById('monthSelect').value
+                            };
+                            const jsonData = await chrome.webview.hostObjects.requestsApi.GetRequestsForDataTable(JSON.stringify(dtRequest));
+
+                            const response = JSON.parse(jsonData);
+                            console.log('First row of data:', response.data[0]);
+
+                            if (response.error) {
+                                console.error("Error from C#:", response.error);
+                                alert("Error loading data: " + response.error);
+                                callback({ // Return an empty dataset on error
+                                    draw: data.draw,
+                                    recordsTotal: 0,
+                                    recordsFiltered: 0,
+                                    data: []
+                                });
+                                return;
+                            }
+
+                            console.log('Received data from C#:', response);
+
+                            callback({
+                                draw: data.draw,
+                                recordsTotal: response.recordsTotal,
+                                recordsFiltered: response.recordsFiltered,
+                                data: response.data
+                            });
+
+                        } catch (e) {
+                            console.error("Error calling C# or parsing JSON:", e);
+                            alert("An unexpected error occurred: " + e.message);
+                            callback({ // Return an empty dataset on error
+                                draw: draw,
+                                recordsTotal: 0,
+                                recordsFiltered: 0,
+                                data: []
+                            });
+                        }
+                    },
+                    columns: [
+                        { "data": "request_id", "title": "ID", "visible": false, "searchable": false },
+                        { // Actions column
+                            "data": null,
+                            "title": "Actions",
+                            "orderable": false,
+                            "searchable": false,
+                            "render": function (data, type, row) {
+                                const isPending = row.status === 'Pending';
+                                const requisitionId = row.requisition_number;
+
+                                return `
+                            <select class="form-select form-select-sm action-select" data-id="${requisitionId}">
+                                <option value="">Select Action</option>
+                                <option value="edit" ${!isPending ? 'disabled' : ''}>✏️ Edit Request</option>
+                                <option value="view">👁️ Generate Report</option>
+                                <option value="assign" ${!isPending ? 'disabled' : ''}>📌 Assign Request</option>
+                                <option value="cancel" ${!isPending ? 'disabled' : ''}>❌ Cancel Request</option>
+                            </select>
+                            `;
+                            }
+                        },
+                        { "data": "requisition_number", "title": "Requisition No." },
+                        { "data": "status", "title": "Status" },
+                        { "data": "printcardno", "title": "Printcard #" }, // Assuming backend property is 'printcardno'
+                        { "data": "requested_date", "title": "Requested date" },
+                        { "data": "due_date", "title": "Due Date" },
+                        { "data": "assigned_user", "title": "Assigned To" },
+                        { "data": "approval_date", "title": "Approval Date", "visible": false },
+                        { "data": "completion_date", "title": "Completion Date", "visible": false },
+                        { "data": "customer", "title": "Customer" },
+                        { "data": "diecut", "title": "Diecut", "visible": false },           // Assuming backend provides 'diecut'
+                        { "data": "rubberdie", "title": "Rubberdie", "visible": false },     // Assuming backend provides 'rubberdie'
+                        { "data": "quantity", "title": "Quantity", "visible": false },
+                        { "data": "createdby", "title": "Requester" },
+                        { "data": "outs", "title": "Outs", "visible": false },
+                        { "data": "uom_code", "title": "UOM", "visible": false },
+                        { "data": "description", "title": "Description" }, // Assuming a general 'description' or adjust to 'box_description' if specific to printcard
+                        { "data": "remarks", "title": "Remarks", "visible": false },
+                        { "data": "origin", "title": "Origin", "visible": false },
+                        { "data": "priority", "title": "Priority", "visible": false }                       
+                    ],
+                    scrollY: '100%',        // Changed from true to '100%' <button class="btn btn-sm btn-info edit-row me-2">
+                    scrollCollapse: true,
+                    paging: true,
+                    lengthMenu: [10, 25, 50, 100],
+                    pageLength: 10, // Initial page size
+                    searching: true, // Enable search box
+                    ordering: true, // Enable column ordering (DataTables will send order params to server)
+                    info: true, // Show "Showing X of Y entries" info
+                    responsive: true, // Make table responsive
+                    select: {
+                        style: 'single',  // Allow only single row selection
+                        info: false       // Don't show selected item info
+                    },
+                    // Add CSS class for selected row
+                    rowCallback: function (row, data, index) {
+                        $(row).attr('data-requests-id', data.requestsId);
+                    }
+                    // You might also want to implement server-side ordering (via 'order' parameter in data.order)
+                    // This would involve modifying your C# query to include ORDER BY based on DataTables' request.
+                });                
+            }
+            
+
+            // Event listener for the "Load Data" button
+            document.getElementById('loadDataButton').addEventListener('click', function () {
+                currentYearFilter = document.getElementById('yearSelect').value;
+                currentMonthFilter = document.getElementById('monthSelect').value;
+                requestsDataTable.ajax.reload(null, true); // Reload DataTables, resetting pagination
+            });
+
+            $(document).ready(function () {
+                populateYearSelect();
+                $(document).on('change', '.action-select', function () {
+                    const action = $(this).val();
+                    const requisitionId = $(this).data('id');
+
+                    if (!action) return; // No action selected
+
+                    // Reset the dropdown
+                    $(this).val('');
+
+                    switch (action) {
+                        case 'edit':
+                            // Call edit logic
+                            console.log(`Edit ${requisitionId}`);
+                            editRecentRequest("EditRequest", requisitionId,"");
+                            break;
+                        case 'view':
+                            // Call view logic
+                            console.log(`View ${requisitionId}`);
+                            const pdfUrl = `http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=${requisitionId}&directDownload=true`;                            
+                            editRecentRequest("view", requisitionId, pdfUrl);                            
+                            break;
+                        case 'assign':
+                            // Call assign logic
+                            console.log(`Assign ${requisitionId}`);
+                            editRecentRequest("UpdateRequest", requisitionId,"");
+                            break;
+                        case 'cancel':
+                            // Call cancel logic
+                            console.log(`Cancel ${requisitionId}`);
+                            editRecentRequest("CancelRequest", requisitionId,"");
+                            break;
+                    }
+                });
+                initializeDataTable(); // Initial load of the table
+
+            });  
+
+            //document.addEventListener('DOMContentLoaded', function () {
+            //    // --- Event Listeners for DataTable Actions ---
+            //    $('#requestsTable tbody').on('click', '.more-actions', function () {
+            //        var id = $(this).data('id');
+            //        editRecentRequest("UpdateRequest", id);                   
+            //    });
+
+            //    $('#requestsTable tbody').on('click', '.edit-row', function () {
+            //        var id = $(this).data('id');
+            //        editRecentRequest("EditRequest",id);
+            //    });
+
+            //    $('#requestsTable tbody').on('click', '.view-details', function () {
+            //        var requisitionNumber = $(this).data('id');
+            //        if (window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.appBridge) {
+            //            var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"                        
+            //            window.chrome.webview.hostObjects.requestsApi.OpenPDFReport(httpbase);
+            //            toastr.success('PDF was generated successfully.');
+            //        } else {
+            //            toastr.alert('PDF generation is not available.');
+            //        }
+            //    });
+
+            //    $('#requestsTable tbody').on('click', '.cancel-request', function () {
+            //        var id = $(this).data('id');
+            //        editRecentRequest("CancelRequest", id);
+            //    });
+            //});
+        </script>
+</body>
+</html>

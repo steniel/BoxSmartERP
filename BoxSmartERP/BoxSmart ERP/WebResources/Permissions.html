@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSD Inventory Management Dashboard</title>
+
+    <link href="./bootstrap-icons/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="./fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="./bootstrap-icons/bootstrap-icons.min.css">
+    <!--<script src="./js/chart.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="custom-scrollbars.css">
+    <script src="./bootstrap-icons/bootstrap.bundle.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <style>
+        :root {
+            --primary-dark-bg: #2b2d30; /* Our main dark background for bars, headers, etc. */
+            --secondary-dark-bg: #3c3f41; /* A slightly lighter dark for card backgrounds, etc. */
+            --accent-blue: #0078d7; /* The blue accent color from sidebar active state */
+            --text-color-light: #ffffff; /* White text for dark backgrounds */
+            --text-color-dark: #e0e0e0; /* Slightly off-white for general text on dark backgrounds */
+            --shadow-color: rgba(0, 0, 0, 0.4); /* Darker shadow for modern feel, slightly more opaque */
+            --border-color: rgba(255, 255, 255, 0.15); /* Slightly less subtle border on dark elements */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #3b3e40; /* General background, slightly lighter than --primary-dark-bg */
+            color: var(--text-color-dark); /* Default text color */
+            padding: 20px; /* Add some padding to the body for content spacing */
+        }
+
+        .dashboard-header {
+            background-color: var(--primary-dark-bg);
+            color: var(--text-color-light);
+            padding: 20px; /* Adjusted padding */
+            margin-bottom: 30px;
+            border-radius: 8px; /* Slightly rounded corners for the header */
+            box-shadow: 0 5px 15px var(--shadow-color); /* More pronounced shadow */
+            text-align: center; /* Center the header text */
+        }
+
+            .dashboard-header h1 {
+                color: var(--text-color-light); /* Ensure header H1 is white */
+                font-weight: 600; /* Make title a bit bolder */
+            }
+
+            .dashboard-header .lead {
+                color: rgba(255, 255, 255, 0.8); /* Slightly dim the lead text */
+            }
+
+        .card {
+            border-radius: 8px; /* Consistent rounded corners */
+            box-shadow: 0 4px 10px var(--shadow-color); /* Slightly softer shadow for cards */
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color); /* Subtle border */
+            background-color: var(--secondary-dark-bg); /* Dark background for cards */
+            color: var(--text-color-dark); /* Text color for card content */
+        }
+
+        .card-header {
+            background-color: var(--primary-dark-bg); /* Darker header for cards */
+            color: var(--text-color-light);
+            border-radius: 7px 7px 0 0 !important; /* Adjust radius to match card */
+            padding: 15px; /* Add padding to card header */
+            border-bottom: 1px solid var(--border-color); /* Separator for card header */
+            font-weight: 500; /* Make card header title a bit bolder */
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .metric-value {
+            font-size: 2.8rem; /* Slightly larger for impact */
+            font-weight: bold;
+            color: var(--accent-blue); /* Use our accent blue */
+            margin-bottom: 5px; /* Space between value and label */
+        }
+
+        .metric-label {
+            color: var(--text-color-dark); /* Use slightly darker text color */
+            font-size: 1.1rem; /* Slightly larger font */
+            opacity: 0.9; /* Increased opacity for better readability */
+            font-weight: 500; /* Make label a bit bolder */
+        }
+
+        .status-indicator {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px; /* Slightly more space */
+            vertical-align: middle; /* Align with text */
+        }
+
+        /* Keep these status colors as they are standard indicators */
+        .status-active {
+            background-color: #2ecc71; /* Green */
+        }
+
+        .status-inactive {
+            background-color: #e74c3c; /* Red */
+        }
+
+        .status-pending {
+            background-color: #f39c12; /* Orange */
+        }
+
+        .recent-activity-item {
+            border-left: 3px solid var(--accent-blue); /* Use accent blue for highlight */
+            padding-left: 15px;
+            margin-bottom: 15px;
+            background-color: rgba(255, 255, 255, 0.08); /* Slightly more visible highlight for the item itself */
+            padding-top: 10px;
+            padding-bottom: 10px;
+            border-radius: 4px;
+        }
+
+            .recent-activity-item p {
+                margin: 0; /* Remove default paragraph margin */
+                line-height: 1.5; /* Improve readability */
+            }
+
+            .recent-activity-item .text-muted {
+                color: rgba(255, 255, 255, 0.6) !important; /* Make muted text more visible */
+            }
+
+        /* Bootstrap-like pills if you're using them */
+        .nav-pills .nav-link {
+            color: var(--text-color-dark); /* Default pill text */
+            background-color: var(--secondary-dark-bg); /* Default pill background */
+            transition: background-color 0.2s, color 0.2s;
+        }
+
+            .nav-pills .nav-link:hover {
+                background-color: rgba(255, 255, 255, 0.15); /* Hover for pills, slightly stronger */
+            }
+
+            .nav-pills .nav-link.active {
+                background-color: var(--accent-blue); /* Active pill background */
+                color: var(--text-color-light); /* Active pill text */
+            }
+
+        /* Adjustments for Bootstrap badges */
+        .badge {
+            font-weight: 500; /* Make badge text a bit bolder */
+        }
+
+            .badge.bg-light { /* Override for bg-light badge to make text visible on dark theme */
+                background-color: rgba(255, 255, 255, 0.15) !important; /* A light background for the badge */
+                color: var(--text-color-light) !important; /* White text for the badge */
+                border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border for definition */
+            }
+
+        /* Bootstrap alert overrides for dark theme */
+        .alert {
+            color: var(--text-color-dark); /* Default alert text color */
+            border: 1px solid;
+            background-color: transparent; /* Remove default alert background */
+        }
+
+        .alert-warning {
+            border-color: #f39c12; /* Orange border */
+            background-color: rgba(243, 156, 18, 0.2); /* Subtle orange background */
+            color: #f39c12; /* Orange text */
+        }
+
+        .alert-danger {
+            border-color: #e74c3c; /* Red border */
+            background-color: rgba(231, 76, 60, 0.2); /* Subtle red background */
+            color: #e74c3c; /* Red text */
+        }
+
+        .alert-info {
+            border-color: #3498db; /* Blue border */
+            background-color: rgba(52, 152, 219, 0.2); /* Subtle blue background */
+            color: #FFFFFF; /* White text */
+        }
+
+        .alert-success {
+            border-color: #2ecc71; /* Green border */
+            background-color: rgba(46, 204, 113, 0.2); /* Subtle green background */
+            color: #2ecc71; /* Green text */
+        }
+
+        .alert strong {
+            color: var(--text-color-light); /* Make strong text in alerts bright white */
+        }
+
+
+        /* Chart.js specific styling for dark theme */
+        canvas {
+            background-color: var(--primary-dark-bg); /* Dark background for charts */
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .chartjs-render-monitor { /* Specific to Chart.js, ensure it respects sizing */
+            width: 100% !important;
+            height: auto !important;
+        }
+
+
+        /* Table styling for dark theme */
+        .table {
+            --bs-table-bg: var(--secondary-dark-bg); /* Table background */
+            --bs-table-color: var(--text-color-dark); /* Table text color */
+            --bs-table-border-color: var(--border-color); /* Table border color */
+            --bs-table-striped-bg: #323537; /* Striped row background */
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.08); /* Hover row background */
+        }
+
+            .table th {
+                color: var(--text-color-light); /* Table header text color */
+                border-bottom-color: var(--border-color);
+            }
+
+            .table td {
+                border-bottom-color: var(--border-color);
+            }
+
+        /* Chart.js Tooltip overrides */
+        .chartjs-tooltip {
+            background-color: rgba(0, 0, 0, 0.8) !important;
+            border-radius: 5px !important;
+            color: var(--text-color-light) !important;
+        }
+
+        .custom-dark-modal {
+            background-color: var(--secondary-dark-bg); /* Match your cards */
+            color: var(--text-color-dark);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+            /* Ensure modal header uses same dark style */
+            .custom-dark-modal .modal-header {
+                background-color: var(--primary-dark-bg);
+                color: var(--text-color-light);
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            /* Optional: Modal footer if you add one later */
+            .custom-dark-modal .modal-footer {
+                background-color: var(--primary-dark-bg);
+                border-top: 1px solid var(--border-color);
+            }
+
+        /* Close button white */
+        .btn-close-white {
+            filter: invert(1);
+        }
+
+        /* Modal table inherits table theme */
+        .custom-dark-modal .table {
+            --bs-table-bg: var(--secondary-dark-bg);
+            --bs-table-color: var(--text-color-dark);
+            --bs-table-border-color: var(--border-color);
+            --bs-table-striped-bg: #323537;
+            --bs-table-hover-bg: rgba(255, 255, 255, 0.08);
+        }
+        /* Override any accidental blue text usage */
+        *[style*="color: var(--accent-blue)"] {
+            color: var(--text-color-dark) !important;
+        }
+
+        .card-body {
+            overflow-x: auto;
+        }
+
+        #inventoryPieChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #inventoryRubberdieChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        #inventoryPrintcardChart {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text-color-light); /* White text for dark theme */
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--secondary-dark-bg); /* Darker card background */
+            border-radius: 8px;
+            box-shadow: 0 4px 10px var(--shadow-color); /* Stronger shadow for depth */
+            border: 1px solid var(--border-color); /* Subtle border */
+        }
+
+        canvas {
+            max-width: 100%; /* Prevent overflow */
+            max-height: 400px; /* Fixed height to avoid resizing issues */
+            background-color: var(--primary-dark-bg); /* Dark chart background */
+            border: 1px solid var(--border-color); /* Subtle border for visibility */
+            border-radius: 5px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .inventory-section, .admin-section {
+            margin: 20px 0;
+        }
+
+        .admin-section {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+
+            button:hover {
+                background: #0056b3;
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        select, input {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 14px;
+            }
+
+            button, select, input {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="container">
+
+            <div class="row">
+                <div class="col-md-8">
+                    <h1><i class="bi bi-box-seam"></i> TSD Inventory Management System</h1>
+                    <p class="lead">User Permissions</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-light text-dark">Last updated: <span id="lastUpdated">Loading...</span></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="inventory-section">
+        <h2>Inventory Status Overview</h2>
+        <button id="createPrintcard" class="action-btn" data-permission="printcard_create">Create Printcard</button>
+        <button id="updatePrintcard" class="action-btn" data-permission="printcard_update">Update Printcard</button>
+        <button id="deletePrintcard" class="action-btn" data-permission="printcard_delete">Delete Printcard</button>
+
+        <table id="inventoryTable">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+
+    <div class="container">
+        <div class="admin-section hidden" data-permission="admin_manage_permissions">
+            <h2>Manage User Permissions</h2>
+            <label for="userIdInput">User ID:</label>
+            <input type="number" id="userIdInput" placeholder="Enter User ID">
+            <label for="permissionSelect">Permission:</label>
+            <select id="permissionSelect">
+                <option value="printcard_view">View Printcard</option>
+                <option value="printcard_create">Create Printcard</option>
+                <option value="printcard_update">Update Printcard</option>
+                <option value="printcard_delete">Delete Printcard</option>
+                <!-- Add more options as needed -->
+            </select>
+            <button onclick="addPermission()">Add Permission</button>
+            <button onclick="removePermission()">Remove Permission</button>
+        </div>
+    </div>
+
+    <script>
+        // Initialize permissions
+        window.userPermissions = window.userPermissions || [];
+
+        // Function to check if user has permission
+        function hasPermission(permission) {
+            return window.userPermissions.includes(permission);
+        }
+
+        // Show/hide elements based on permissions
+        document.querySelectorAll('[data-permission]').forEach(elem => {
+            const requiredPermission = elem.getAttribute('data-permission');
+            if (!hasPermission(requiredPermission)) {
+                elem.classList.add('hidden');
+            }
+        });
+
+        // Sample inventory data (replace with actual data from C#)
+        const inventoryData = [
+            { id: 1, item: 'Plate A', type: 'Rubberdie', status: 'In Development' },
+            { id: 2, item: 'Mould B', type: 'Diecut', status: 'Approved' }
+        ];
+
+        // Populate table
+        const tableBody = document.querySelector('#inventoryTable tbody');
+        inventoryData.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                    <td>${item.item}</td>
+                    <td>${item.type}</td>
+                    <td>${item.status}</td>
+                    <td>
+                        ${hasPermission(`${item.type.toLowerCase()}_update`)
+                    ? `<button onclick="updateItem(${item.id})">Edit</button>`
+                    : ''}
+                        ${hasPermission(`${item.type.toLowerCase()}_delete`)
+                    ? `<button onclick="deleteItem(${item.id})">Delete</button>`
+                    : ''}
+                    </td>`;
+            tableBody.appendChild(row);
+        });
+
+        // Placeholder functions for inventory actions
+        function updateItem(id) {
+            alert(`Update item ${id}`);
+            window.chrome.webview.postMessage({ action: 'update', id });
+        }
+
+        function deleteItem(id) {
+            alert(`Delete item ${id}`);
+            window.chrome.webview.postMessage({ action: 'delete', id });
+        }
+
+        // Admin functions for managing permissions
+        function addPermission() {
+            const userId = document.getElementById('userIdInput').value;
+            const permission = document.getElementById('permissionSelect').value;
+            if (userId && permission) {
+                window.chrome.webview.postMessage({ action: 'addPermission', userId: parseInt(userId), permission });
+                alert(`Added ${permission} for user ${userId}`);
+            } else {
+                alert('Please enter a valid User ID and select a permission');
+            }
+        }
+
+        function removePermission() {
+            const userId = document.getElementById('userIdInput').value;
+            const permission = document.getElementById('permissionSelect').value;
+            if (userId && permission) {
+                window.chrome.webview.postMessage({ action: 'removePermission', userId: parseInt(userId), permission });
+                alert(`Removed ${permission} for user ${userId}`);
+            } else {
+                alert('Please enter a valid User ID and select a permission');
+            }
+        }
+    </script>
+</body>
+</html>
