@@ -17,6 +17,7 @@ using System.Text.Json;
 using System.Web;
 using System.Windows.Forms;
 using static BoxSmart_ERP.Services.PostgreSQLServices;
+using static System.Collections.Specialized.BitVector32;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
@@ -24,6 +25,8 @@ namespace BoxSmart_ERP
 {
     public partial class MainForm : Form
     {
+        //app version
+        public readonly string _appVersion = "1.0.0";
         // P/Invoke declarations for moving the window
         public const int WM_NCLBUTTONDOWN = 0xA1;
         public const int HT_CAPTION = 0x2;
@@ -47,6 +50,7 @@ namespace BoxSmart_ERP
         private static string connectionString;
         private CancelConfirmationDialog confirmationDialog;
         private PermissionService _permissionService;
+        
         public MainForm(IConfiguration config)
         {
             InitializeComponent();
@@ -66,7 +70,7 @@ namespace BoxSmart_ERP
             pgsqlErrorDetails = _config["ConnectionStrings:ErrorDetails"];      
 
             splitContainer1.BackColor = ColorTranslator.FromHtml("#282A2D");
-            this.Text = "BoxSmart ERP"; // Set the title of the main form
+            this.Text = $"BoxSmart ERP Version {_appVersion}"; // Set the title of the main form
             //background.Show(); // Show the background form           
 
         }
@@ -74,8 +78,14 @@ namespace BoxSmart_ERP
         public class RequestMessage
         {
             public string Command { get; set; } = "";           // default to empty string
-            public string ControlSequence { get; set; } = "";   // default to empty string
+            public string ControlSequence { get; set; } = "";   // default to empty string            
             public string PdfURL { get; set; } = "";
+        }
+
+        public class DiecutMessage {             
+            public string Command { get; set; } = "";           // default to empty string
+            public int DiecutID { get; set; } = 0;       // default to 0
+            public string requisitionNumber { get; set; } = "";
         }
 
         private async void RequestsMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
@@ -84,7 +94,7 @@ namespace BoxSmart_ERP
             if (data != null)
             {
                 //string commandReceived = data.ContainsKey("Command") ? data["Command"] : "";
-                //string controlSequence = data.ContainsKey("ControlSequence") ? data["ControlSequence"] : "";
+                //string diecutId = data.ContainsKey("DiecutID") ? data["DiecutID"] : "";
                 string commandReceived = data?.Command ?? "";
                 string controlSequence = data?.ControlSequence ?? "";
                 string _PdfUrl = data?.PdfURL ?? "";
@@ -529,8 +539,115 @@ namespace BoxSmart_ERP
                 {                                        
                     await NewRequestsObjects();
                 }
-                //For Maintenance tasks                
 
+                /*********************************************************************************************/
+                /*************************** Diecut Section diecut_assign_item ***********************************/
+                /*********************************************************************************************/
+                if (action.Contains("diecut_update"))
+                {
+                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
+                    if (!hasPermission)
+                    {
+                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
+                    string commandReceived = data?.Command ?? "";
+                    int diecutId = (int)(data?.DiecutID);
+                    string requisitionNumber = data?.requisitionNumber ?? "";
+                    string status = "Development";
+                    string diecut_action = "add diecut number";
+                    if (CheckDiecutItemStatus(diecutId, status))
+                    {                                
+                        EditDiecutItem editDiecut = new(_config, diecutId);
+                        editDiecut.Show(); 
+                    }
+                    else
+                    {
+                        MessageBox.Show($"You can only {diecut_action} of an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+
+                if (action.Contains("diecut_assign_maintenance"))
+                {
+                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
+                    if (!hasPermission)
+                    {
+                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
+                    string commandReceived = data?.Command ?? "";
+                    int diecutId = (int)(data?.DiecutID);
+                    string requisitionNumber = data?.requisitionNumber ?? "";
+                    string status = "Active";
+                    string diecut_action = "add to maintenance";
+                    if (CheckDiecutItemStatus(diecutId, status))
+                    {
+                        EditDiecutItem editDiecut = new(_config, diecutId);
+                        editDiecut.Show(); 
+                    }
+                    else
+                    {
+                        MessageBox.Show($"You can only {diecut_action} an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+
+                if (action.Contains("diecut_dispose"))
+                {
+                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
+                    if (!hasPermission)
+                    {
+                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
+                    string commandReceived = data?.Command ?? "";
+                    int diecutId = (int)(data?.DiecutID);
+                    string requisitionNumber = data?.requisitionNumber ?? "";
+                    string status = "Active";
+                    string diecut_action = "dispose";
+                    if (CheckDiecutItemStatus(diecutId, status))
+                    {
+                        EditDiecutItem editDiecut = new(_config, diecutId);
+                        editDiecut.Show();
+                    }
+                    else
+                    {
+                        MessageBox.Show($"You can only {diecut_action} an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+
+                if (action.Contains("diecut_assign_item"))
+                {
+                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
+                    if (!hasPermission)
+                    {
+                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
+                    string commandReceived = data?.Command ?? "";
+                    int diecutId = (int)(data?.DiecutID);
+                    string requisitionNumber = data?.requisitionNumber ?? "";
+                    string status = "Active";
+                    string diecut_action = "assign to converting machine";
+                    if (CheckDiecutItemStatus(diecutId, status))
+                    {
+                        EditDiecutItem editDiecut = new(_config, diecutId);
+                        editDiecut.Show();
+                    }
+                    else
+                    {
+                        MessageBox.Show($"You can only {diecut_action} an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+
+                /*********************************************************************************************/
+                /**************************************End Diecut Section ************************************/
+                /*********************************************************************************************/
+
+                //For Maintenance tasks                
                 if (currentHtml.EndsWith(Path.GetFileName(dashboardPath), StringComparison.OrdinalIgnoreCase))
                 {
                     var messagePayload = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(e.WebMessageAsJson);
@@ -1240,7 +1357,7 @@ namespace BoxSmart_ERP
             {
                 return false; // Invalid requisition number
             }
-            // Check if the requisition number exists in the database and has a pending status
+
             string query = "SELECT COUNT(*) FROM tooling_requests WHERE requisition_number = @requisitionNumber AND status = 'Pending'";
             using (var conn = new NpgsqlConnection(connectionString))
             {
@@ -1248,6 +1365,26 @@ namespace BoxSmart_ERP
                 using (var cmd = new NpgsqlCommand(query, conn))
                 {
                     cmd.Parameters.AddWithValue("requisitionNumber", requisitionNumber);
+                    int count = Convert.ToInt32(cmd.ExecuteScalar());
+                    return count > 0; // Return true if there is at least one pending requisition
+                }
+            }
+        }
+
+        private bool CheckDiecutItemStatus(int DiecutID, string Status)
+        {      
+            string query = "SELECT count(*) FROM diecut_tools dt " +
+                        "JOIN generic_status gs ON gs.id = dt.status_id " +
+                        "JOIN international_description ide ON ide.foreign_id = gs.status_value AND ide.table_id = 102 " +
+                        "WHERE dt.id=@DiecutID AND ide.content=@Status;";
+
+            using (var conn = new NpgsqlConnection(connectionString))
+            {
+                conn.Open();
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("DiecutID", DiecutID);
+                    cmd.Parameters.AddWithValue("Status", Status);
                     int count = Convert.ToInt32(cmd.ExecuteScalar());
                     return count > 0; // Return true if there is at least one pending requisition
                 }
