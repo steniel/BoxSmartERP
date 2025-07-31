@@ -5,25 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TSD Inventory Management Dashboard</title>
     <link href="./bootstrap-icons/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="./fontawesome/css/all.min.css">
     <link rel="stylesheet" href="./bootstrap-icons/bootstrap-icons.min.css">
     <!--<script src="./js/chart.js"></script>-->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="custom-scrollbars.css">
     <script src="./bootstrap-icons/bootstrap.bundle.min.js"></script>
 
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-
     <style>
         :root {
-            --primary-dark-bg: #2b2d30; /* Our main dark background for bars, headers, etc. */
-            --secondary-dark-bg: #3c3f41; /* A slightly lighter dark for card backgrounds, etc. */
-            --accent-blue: #0078d7; /* The blue accent color from sidebar active state */
-            --text-color-light: #ffffff; /* White text for dark backgrounds */
-            --text-color-dark: #e0e0e0; /* Slightly off-white for general text on dark backgrounds */
-            --shadow-color: rgba(0, 0, 0, 0.4); /* Darker shadow for modern feel, slightly more opaque */
-            --border-color: rgba(255, 255, 255, 0.15); /* Slightly less subtle border on dark elements */
+            --primary-dark-bg: #2b2d30;
+            --secondary-dark-bg: #3c3f41;
+            --accent-blue: #0078d7;
+            --text-color-light: #ffffff;
+            --text-color-dark: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.4);
+            --border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Light Theme Variables */
+        body.light-theme {
+            --primary-dark-bg: #ffffff;
+            --secondary-dark-bg: #f5f5f5;
+            --accent-blue: #0078d7;
+            --text-color-light: #333333;
+            --text-color-dark: #111111;
+            --shadow-color: rgba(0, 0, 0, 0.2);
+            --border-color: rgba(0, 0, 0, 0.1);
+            background-color: #fafafa;
         }
 
         body {
@@ -343,6 +356,28 @@
                 outline: none;
                 border-color: var(--accent-blue);
             }
+
+        #themeToggle {
+            border: 1px solid var(--border-color);
+            color: var(--text-color-light);
+        }
+
+            #themeToggle:hover {
+                background-color: rgba(0,0,0,0.05);
+            }
+
+        body.light-theme #themeToggle:hover {
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        body.light-theme #themeToggle {
+            border: 1px solid #666; /* Dark grey border for light theme */
+            color: #333; /* Dark text/icon for light theme */
+        }
+
+        #themeToggle i {
+            color: inherit;
+        }
     </style>
 </head>
 <body>
@@ -356,9 +391,13 @@
                 </div>
                 <div class="col-md-4 text-end">
                     <span class="badge bg-light text-dark">Last updated: <span id="lastUpdated">Loading...</span></span>
+                    <button id="themeToggle" class="btn btn-sm btn-outline-light ms-2">
+                        <i id="themeIcon" class="bi bi-moon"></i>
+                    </button>
                 </div>
             </div>
-        </div>
+
+        </div>       
     </div>
 
     <div class="container">
@@ -388,10 +427,11 @@
                     <div class="metric-value" id="totalDiecutMould">0</div>
                     <div class="metric-label">Diecut Moulds</div>
                     <div class="mt-2">
-                        <span class="badge bg-danger" id="totalDiecutOverdueMaintenance">0 overdue for maintenance</span>
+                        <span class="badge bg-danger " id="totalDiecutOverdueMaintenance">0 overdue for maintenance</span>
                     </div>
                     <div class="mt-2">
-                        <span class="badge bg-warning-subtle" id="totalDiecutInMaintenance"></span>
+                        <span class="badge bg-warning-subtle text-dark" id="totalDiecutInMaintenance"></span>
+                        <span class="badge bg-info-subtle text-dark" id="totalDisposed"> Total disposed diecut moulds</span>
                     </div>
                 </div>
             </div>
@@ -403,7 +443,7 @@
                         <span class="badge bg-info" id="totalPendingRequests"></span>
                         <span class="badge bg-info" id="totalHighPriorityRequests"></span>
                         <span class="badge bg-info" id="totalInDevelopmentRequests"></span>
-                        <span class="badge bg-info" id="totalInCompletedRequests"></span>
+                        <span class="badge bg-info" id="totalInCompletedRequests"></span>                        
                     </div>
                 </div>
             </div>
@@ -568,6 +608,7 @@
 
     <script>
 
+
         document.addEventListener("DOMContentLoaded", function () {
             tryLoadRecentRequests();
             console.log("DOM fully loaded");
@@ -576,6 +617,23 @@
                 viewAllBtn.addEventListener('click', tryLoadRecentRequests);
                 //console.log("WebView2 message received", event.data);
             }
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+
+            // Load saved theme
+            if (localStorage.getItem('theme') === 'light') {
+                document.body.classList.add('light-theme');
+                themeIcon.classList.replace('bi-moon', 'bi-sun');
+            }
+
+            themeToggle.addEventListener('click', () => {
+                document.body.classList.toggle('light-theme');
+                updateChartColors();
+                const isLight = document.body.classList.contains('light-theme');
+                themeIcon.classList.toggle('bi-moon', !isLight);
+                themeIcon.classList.toggle('bi-sun', isLight);
+                localStorage.setItem('theme', isLight ? 'light' : 'dark');
+            });
         });
 
         let pieChart;
@@ -713,11 +771,11 @@
                     data.forEach(row => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                        <td>${row.requisition_number || ''}</td>
-                        <td>${row.request_type || ''}</td>
-                        <td>${row.customer || ''}</td>
-                        <td>${row.status || ''}</td>
-                        <td>${row.due_date || ''}</td>`;
+                                <td>${row.requisition_number || ''}</td>
+                                <td>${row.request_type || ''}</td>
+                                <td>${row.customer || ''}</td>
+                                <td>${row.status || ''}</td>
+                                <td>${row.due_date || ''}</td>`;
                         tbody.appendChild(tr);
                     });
                 }).catch(err => {
@@ -824,6 +882,28 @@
             }
         }
 
+        function updateChartColors() {
+            Chart.defaults.color = getComputedStyle(document.body).getPropertyValue('--text-color-dark');
+            Chart.defaults.borderColor = getComputedStyle(document.body).getPropertyValue('--border-color');
+            if (inventoryChart) inventoryChart.update();
+        }
+
+        function updateTotalDisposedDiecuts(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = `+${value} total disposed diecut moulds`;                 
+                if (value > 0) {
+                    element.classList.remove('bg-success', 'bg-warning', 'bg-danger');
+                    element.classList.add('bg-success');
+                } else {
+                    element.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
+                    element.classList.add('bg-success');
+                }
+            } else {
+                console.warn(`Element with ID '${elementId}' not found.`);
+            }
+        }
+
         function updateCompletedRequests(elementId, value) {
             const element = document.getElementById(elementId);
             if (element) {
@@ -858,12 +938,12 @@
 
         function updateDiecutUsageLimit(elementId, value, data = []) {
             const element = document.getElementById(elementId);
-            if (element) {                
+            if (element) {
                 if (value > 0) {
                     element.innerHTML = `<strong><a href="#" class="link-light" onclick='showDiecutModal(${JSON.stringify(data)})'>${value} diecut moulds</a></strong> approaching more than 80% of the maximum usage limit.`;
                     element.classList.remove('bg-success', 'bg-warning', 'bg-danger');
                     element.classList.add('bg-danger');
-                } else {                                        
+                } else {
                     element.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
                     element.classList.add('bg-success');
                     element.textContent = "No diecut moulds nearing usage limit.";
@@ -879,12 +959,12 @@
             data.forEach(row => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td>${row.diecut_id}</td>
-                    <td>${row.description}</td>
-                    <td>${row.customer}</td>
-                    <td>${row.current_usage}</td>
-                    <td>${row.machine} </td>
-                    <td>${row.requested_date} </td> `;
+                            <td>${row.diecut_id}</td>
+                            <td>${row.description}</td>
+                            <td>${row.customer}</td>
+                            <td>${row.current_usage}</td>
+                            <td>${row.machine} </td>
+                            <td>${row.requested_date} </td> `;
                 tbody.appendChild(tr);
             });
 
@@ -915,13 +995,13 @@
                 if (value > 0 && value < 5) {
                     element.classList.remove('bg-secondary', 'bg-warning', 'bg-danger');
                     element.classList.add('bg-danger-subtle');
-                } else if (value >= 5 ) {
+                } else if (value >= 5) {
                     element.classList.remove('bg-secondary', 'bg-warning', 'bg-danger-subtle');
                     element.classList.add('bg-danger');
                 } else {
                     element.classList.remove('bg-secondary', 'bg-danger-subtle', 'bg-danger');
                     element.classList.add('bg-success');
-                }                
+                }
             } else {
                 console.warn(`Element with ID '${elementId}' not found.`);
             }
@@ -934,11 +1014,11 @@
             data.forEach(row => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                <td>${row.rubber_id}</td>
-                <td>${row.description}</td>
-                <td>${row.customer}</td>
-                <td>${row.current_usage}</td>
-                <td>${row.requested_date}  </td>  `;
+                        <td>${row.rubber_id}</td>
+                        <td>${row.description}</td>
+                        <td>${row.customer}</td>
+                        <td>${row.current_usage}</td>
+                        <td>${row.requested_date}  </td>  `;
                 tbody.appendChild(tr);
             });
 

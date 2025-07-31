@@ -62,7 +62,7 @@
 
             <div class="form-group">
                 <label for="requested_date" class="form-label">Requested Date <span class="required">*</span></label>
-                <input type="text" class="form-control" id="requested_date" name="requested_date" readonly>
+                <input type="text" class="form-control" id="requested_date" name="requested_date">
             </div>
 
             <div class="form-group">
@@ -228,6 +228,16 @@
 
     <script>
 
+        // Warn on page leave if table has rows
+        window.onbeforeunload = function (e) {
+            const requestsTable = $('#requestsTable').DataTable();
+            if (requestsTable.rows().count() > 0) {
+                const confirmationMessage = 'You have unsaved changes. Are you sure you want to leave?';
+                (e || window.event).returnValue = confirmationMessage; // Standard for most browsers
+                return confirmationMessage; // For older browsers
+            }
+        };
+      
         //Send command: Open more actions C# form with two parameters
         function editRecentRequest(command, id, pdfurl) {
             window.chrome.webview.postMessage({
@@ -236,7 +246,6 @@
                 PdfURL: pdfurl
             });
         }
-
 
         function validateAndFormatRequisition(input) {
             const raw = input.value.trim();
@@ -533,7 +542,7 @@
                     //        if (data.Command === "InsertSuccess") {
                     //            console.log("Insert completed, now load PDF.");
                     //            var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"
-                    //            editRecentRequest("InsertSuccess", requisitionNumber, httpbase);
+                    //            //editRecentRequest("InsertSuccess", requisitionNumber, httpbase);
                     //            window.chrome.webview.hostObjects.requestsApi.OpenPDFReportInForm(httpbase);                                
                     //        } else if (data.Command === "InsertFailed") {
                     //            console.error("Insert failed.");
@@ -545,14 +554,14 @@
 
 
                     
-                    //if (window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.appBridge) {
-                    //    var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"
-                    //    window.chrome.webview.hostObjects.requestsApi.OpenPDFReportInForm(httpbase);
-                    //    toastr.success('PDF was generated successfully.');
-                    //} else {
-                    //    toastr.alert('PDF generation is not available.');
-                    //}
-                    //document.getElementById("requisition_number").value = ""; 
+                    if (window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.appBridge) {
+                        var httpbase = "http://192.168.2.23:8080/art/runReport?reportName=Specimen Request&reportFormat=pdf&public=true&user=salesuser&p-requisitionnumber=" + requisitionNumber; +"&directDownload=true"
+                        window.chrome.webview.hostObjects.requestsApi.OpenPDFReport(httpbase);
+                        toastr.success('PDF was generated successfully.');
+                    } else {
+                        toastr.alert('PDF generation is not available.');
+                    }
+                    document.getElementById("requisition_number").value = ""; 
 
                     
                     //if (window.chrome && window.chrome.webview && window.chrome.webview.hostObjects && window.chrome.webview.hostObjects.appBridge) {

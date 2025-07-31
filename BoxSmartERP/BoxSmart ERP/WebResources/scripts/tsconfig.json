@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext", /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017', 'ES2018', 'ES2019', 'ES2020', 'ES2021', 'ES2022', 'ESNext'. */
+    "module": "None", /* Specify module code generation: 'None', 'CommonJS', 'AMD', 'System', 'UMD', 'ES6', 'ES2015', 'ES2020', 'ES2022', 'ESNext'. */
+    "outFile": "./wwwroot/js/bundle.js", /* Concatenate and emit output to single file. For use with 'amd' or 'system' module. */
+    "strict": true, /* Enable all strict type-checking options. */
+    "esModuleInterop": true, /* Emit additional JavaScript to ease support for importing CommonJS modules. This enables 'allowSyntheticDefaultImports' for type compatibility. */
+    "skipLibCheck": true, /* Skip type checking all .d.ts files. */
+    "forceConsistentCasingInFileNames": true, /* Ensure that casing is consistent across all file paths. */
+    "lib": [ "dom", "ESNext" ], /* Specify a list of libraries to be included in the compilation. */
+    "allowJs": true /* Allow JavaScript files to be compiled. */
+  },
+  "include": [
+    "src/**/*.ts", /* Specify files to include. Adjust this path to your TypeScript source files. */
+    "src/**/*.js" /* Include JS files if you have any existing ones you want bundled. */
+  ],
+  "exclude": [
+    "node_modules",
+    "wwwroot" /* Exclude the output directory to prevent circular compilation. */
+  ]
+}

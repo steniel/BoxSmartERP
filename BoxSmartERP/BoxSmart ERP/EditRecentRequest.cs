@@ -18,17 +18,7 @@ using static BoxSmart_ERP.Services.PostgreSQLServices;
 namespace BoxSmart_ERP
 {
     public partial class EditRecentRequest : Form
-    {
-        // P/Invoke declarations for moving the window
-        public const int WM_NCLBUTTONDOWN = 0xA1;
-        public const int HT_CAPTION = 0x2;
-
-        [DllImport("user32.dll")]
-        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
-
-        [DllImport("user32.dll")]
-        public static extern bool ReleaseCapture();
-
+    {        
         private readonly PostgreSQLServices _dbService;
         private readonly IConfiguration _config;
         private string _requisitionNumber;
@@ -60,28 +50,7 @@ namespace BoxSmart_ERP
             InitializeWebControl();
         }
         private async void InitializeWebControl()
-        {
-            //Topbar
-            Panel panelMoveWindow = new()
-            {
-                Size = new Size(773, 36),
-                Location = new Point(258, 0)
-            };
-            panelMoveWindow.Visible = false;
-            this.Controls.Add(panelMoveWindow);
-
-            panelMoveWindow.BringToFront();
-            panelMoveWindow.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            panelMoveWindow.BackColor = ColorTranslator.FromHtml("#1e1e37");
-            panelMoveWindow.Show();
-            panelMoveWindow.MouseDown += (s, e) =>
-            {
-                if (e.Button == MouseButtons.Left)
-                {
-                    ReleaseCapture();
-                    SendMessage(Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
-                }
-            };
+        {            
             await webViewTitlebar.EnsureCoreWebView2Async(null);
             webViewTitlebar.CoreWebView2.WebMessageReceived += WebViewTitlebar_WebMessageReceived;
             string htmlFilePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/EditRequestTitlebar.html");
@@ -123,7 +92,7 @@ namespace BoxSmart_ERP
                     bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_delete") || await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "rubberdie_delete");
                     if (!hasPermission)
                     {
-                        MessageBox.Show("You do not have permission to delete this request item.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("You do not have permission to delete the requested item.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                     var result = MessageBox.Show($"Are you sure you want to delete the request item: {data.RequestId} : {data.ItemDescription}?", "Confirm Deletion", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
@@ -140,7 +109,7 @@ namespace BoxSmart_ERP
                                 MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
                                 if (mainForm != null)
                                 {
-                                    mainForm.RefreshRequestsList();
+                                    mainForm.RefreshWebViewApps();
                                 }
                             }
                             else
@@ -165,7 +134,7 @@ namespace BoxSmart_ERP
                         //    MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
                         //    if (mainForm != null)
                         //    {
-                        //        mainForm.RefreshRequestsList();
+                        //        mainForm.RefreshWebViewApps();
                         //    }
                         //}
                         //else
@@ -196,7 +165,7 @@ namespace BoxSmart_ERP
                     MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
                     if (mainForm != null)
                     {
-                        mainForm.RefreshRequestsList();
+                        mainForm.RefreshWebViewApps();
                     }
                 } 
             }

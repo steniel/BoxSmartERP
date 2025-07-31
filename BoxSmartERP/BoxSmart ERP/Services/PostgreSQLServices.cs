@@ -1,32 +1,14 @@
-﻿using Azure.Core;
-using BoxSmart_ERP.Services;
-using Dapper;
-using Microsoft.VisualBasic;
-using Microsoft.VisualBasic.ApplicationServices;
-using Microsoft.VisualBasic.Devices;
-using Microsoft.Web.WebView2.Core;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Npgsql;
-using Npgsql.Internal;
 using NpgsqlTypes;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
-using OfficeOpenXml.FormulaParsing.Excel.Functions.Information;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
-using System.Linq;
-using System.Net;
-using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json; // For JSON serialization
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
-using System.Windows.Forms;
-using static BoxSmart_ERP.Services.PostgreSQLServices;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace BoxSmart_ERP.Services
 {
@@ -58,7 +40,7 @@ namespace BoxSmart_ERP.Services
                 }
                 if (request.userId <= 0)
                 {
-                    throw new ArgumentException("UserId must be greater than zero.");
+                    throw new ArgumentException("SessionUserID must be greater than zero.");
                 }
                
             
@@ -100,7 +82,7 @@ namespace BoxSmart_ERP.Services
                             "requisition_number, due_date, requested_date, status, assigned_to, user_id, item_description,priority,num_outs, updated_by) " +
                             "VALUES (@customerId, @printcardId, @quantity, @uom, @design_notes, @rubberdie, " +
                             "@diecutMould, @negativeFilm, @requestInternal, @requestExternal, @_requisitionNumber, " +
-                            "@dueDate, @requestedDate, @status, @assigned_to, @UserId, @ItemDescription, @priority, @num_outs,@updated_by) " +
+                            "@dueDate, @requestedDate, @status, @assigned_to, @SessionUserID, @ItemDescription, @priority, @num_outs,@updated_by) " +
                             "RETURNING request_id;",
                             conn, transaction);
 
@@ -119,7 +101,7 @@ namespace BoxSmart_ERP.Services
                         cmd.Parameters.AddWithValue("requestedDate", itemrequestedDate);
                         cmd.Parameters.AddWithValue("status", "Pending");
                         cmd.Parameters.AddWithValue("assigned_to", 10); //Since this is a new request, we assign it to the developer (10), which translate to Not Yet Assigned
-                        cmd.Parameters.AddWithValue("UserId", userId);
+                        cmd.Parameters.AddWithValue("SessionUserID", userId);
                         cmd.Parameters.AddWithValue("ItemDescription", itemDescription);
                         cmd.Parameters.AddWithValue("priority", requestPriority);
                         cmd.Parameters.AddWithValue("num_outs", numOuts);
@@ -156,7 +138,7 @@ namespace BoxSmart_ERP.Services
                     {
                         transaction.Rollback();
                         LogErrorMessage(ex, "InsertNewItem");
-                        MessageBox.Show("An error has occurred, see log file.: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show("An error has occurred, see log file.: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         throw;
                     }                    
                 }                
@@ -164,7 +146,7 @@ namespace BoxSmart_ERP.Services
             catch (Exception ex)
             {
                 OnMessageToWebView?.Invoke("InsertFailed");
-                MessageBox.Show("Error deserializing JSON data: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error deserializing JSON data: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 LogErrorMessage(ex, "InsertNewItem");
                 return "error: " + ex.Message;
             }
@@ -198,7 +180,7 @@ namespace BoxSmart_ERP.Services
                             transaction.Rollback();
                             OnMessageToWebView?.Invoke("InsertMaintenanceFailed");
                             LogErrorMessage(ex, "InsertMaintenance");
-                            MessageBox.Show("An error has occurred, see log file.: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("An error has occurred, see log file.: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             throw;
                         }
                     }
@@ -208,7 +190,7 @@ namespace BoxSmart_ERP.Services
             catch (Exception ex)
             {
                 OnMessageToWebView?.Invoke("InsertMaintenanceFailed");
-                MessageBox.Show("Error deserializing JSON data: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error deserializing JSON data: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 LogErrorMessage(ex, "InsertMaintenance");
                 return;
             }
@@ -581,6 +563,8 @@ namespace BoxSmart_ERP.Services
             public int RubberdieUsageLimit { get; set; } // Usage limit for rubberdie
             [JsonPropertyName("totalDiecutInMaintenance")]
             public int TotalDiecutInMaintenance { get; set; } // Total number of diecuts in maintenance
+            [JsonProperty("totalDisposed")]
+            public int totalDiecutDisposed { get; set; } // Total number of diecuts disposed
 
             [JsonPropertyName("totalActiveRubberdie")]
             public int TotalActiveRubberdie { get; set; } // Total number of active diecuts
@@ -1175,6 +1159,7 @@ namespace BoxSmart_ERP.Services
         // Renamed and slightly adjusted the existing method for clarity
         public TSDMetrics GetPrintcardSummaryMetrics(string yearMonth = "") // yearMonth is for filtering TotalPrintcards
         {
+            SpecimenCycles cyclesData = GetSpecimenCycles();
             var metrics = new TSDMetrics();
             try
             {
@@ -1333,13 +1318,14 @@ namespace BoxSmart_ERP.Services
                 {
                     metrics.TotalActiveRubberdie = Convert.ToInt32(cmdTotalRubberdies.ExecuteScalar() ?? 0);
                 }
-                string diecutUsageLimitSql = @"
+                string diecutUsageLimitSql = @$"
                     SELECT 
                        count(*)
                     FROM 
                         public.diecut_tools
                     WHERE 
-                        current_usage >= life_cycle * 0.8";
+                        current_usage >= life_cycle * 0.8 OR 
+                        date_created <= NOW() - INTERVAL '{cyclesData.diecut_date_cycle} years';";
                 using (NpgsqlCommand cmdDiecutUsageLimit = new(diecutUsageLimitSql, conn))
                 {
                     metrics.DiecutUsageLimit = Convert.ToInt32(cmdDiecutUsageLimit.ExecuteScalar() ?? 0);
@@ -1361,7 +1347,14 @@ namespace BoxSmart_ERP.Services
                 using (NpgsqlCommand cmdDiecutMaintenance = new(totalDiecutInMaintenanceSql, conn))
                 {
                     metrics.TotalDiecutInMaintenance = Convert.ToInt32(cmdDiecutMaintenance.ExecuteScalar() ?? 0);
-                }               
+                }      
+                
+                string totalDiecutDisposedSql = $"SELECT COUNT(*) FROM diecut_tools WHERE status_id={Config.DiecutDisposeStatus};";
+                using (NpgsqlCommand cmdDiecutDisposed = new(totalDiecutDisposedSql, conn))
+                {
+                    metrics.totalDiecutDisposed = Convert.ToInt32(cmdDiecutDisposed.ExecuteScalar() ?? 0);
+                }   
+
                 return metrics;
 
             }
@@ -1827,7 +1820,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -1862,7 +1855,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -1898,7 +1891,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -1929,7 +1922,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -2000,7 +1993,7 @@ namespace BoxSmart_ERP.Services
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show(ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             return parResult;
@@ -2055,7 +2048,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
@@ -2094,7 +2087,7 @@ namespace BoxSmart_ERP.Services
                           requisition_number, due_date, requested_date, status, assigned_to, user_id, item_description,priority,num_outs) 
                           VALUES (@customerId, @printcardId, @quantity, @uom, @design_notes, @rubberdie, 
                           @diecutMould, @negativeFilm, @requestInternal, @requestExternal, @_requisitionNumber, 
-                          @dueDate, @requestedDate, @status, @assigned_to, @UserId, @ItemDescription, @priority, @num_outs)
+                          @dueDate, @requestedDate, @status, @assigned_to, @SessionUserID, @ItemDescription, @priority, @num_outs)
                           RETURNING request_id;",
                                 conn, transaction);
 
@@ -2113,10 +2106,10 @@ namespace BoxSmart_ERP.Services
                             cmd.Parameters.AddWithValue("requestedDate", DateTime.Parse(request.RequestedDate));
                             cmd.Parameters.AddWithValue("status", request.RequestStatus);
                             cmd.Parameters.AddWithValue("assigned_to", request.AssignedTo);
-                            cmd.Parameters.AddWithValue("UserId", request.UserId);
+                            cmd.Parameters.AddWithValue("SessionUserID", request.UserId);
                             cmd.Parameters.AddWithValue("ItemDescription", request.ItemDescription);
                             cmd.Parameters.AddWithValue("priority", request.RequestPriority);
-                            cmd.Parameters.AddWithValue("num_outs", request.NumOuts == 0 ? DBNull.Value : (object)request.NumOuts);
+                            cmd.Parameters.AddWithValue("num_outs", request.NumOuts);
 
                             long toolingRequestId = (long)await cmd.ExecuteScalarAsync();
 
@@ -2142,13 +2135,12 @@ namespace BoxSmart_ERP.Services
                                 await rubberdieCmd.ExecuteNonQueryAsync();
                             }
                             await transaction.CommitAsync();
-                            OpenPDFReport(request.PdfUrl);                            
                         }
                         catch (NpgsqlException ex)
                         {
                             await transaction.RollbackAsync();
                             LogErrorMessage(ex, "InsertRequests");
-                            MessageBox.Show("An error has occurred, see log file.: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            MessageBox.Show("An error has occurred, see log file.: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                             throw;
                         }
                     }                    
@@ -2157,7 +2149,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error deserializing JSON data: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Error deserializing JSON data: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 LogErrorMessage(ex, "InsertRequests");
                 return false;
             }
@@ -2285,6 +2277,7 @@ namespace BoxSmart_ERP.Services
             public string ItemNotes { get; set; }
             public string ItemStatus { get; set; }
             public DateTime DateCreated { get; set; }
+            public string RequisitionNumber { get; set; } 
         }
         public string GetDiecutTable(int draw, int start, int length, string searchValue, string dateYear, string dateMonth)
         {
@@ -2317,7 +2310,8 @@ namespace BoxSmart_ERP.Services
                     rack_num ILIKE @searchValue OR
                     row_num ILIKE @searchValue OR
                     machine ILIKE @searchValue OR
-                    status ILIKE @searchValue                   
+                    status ILIKE @searchValue  OR
+                    requisition_number ILIKE @searchValue
                 )
             ";
             }
@@ -2355,7 +2349,7 @@ namespace BoxSmart_ERP.Services
                     // 3. Get the actual paged and filtered data
                     string dataQuery = $@"
                     SELECT diecutid, customer, item_description, diecut_number, rack_num, row_num, type, 
-                           machine, current_usage, notes, status, date_created
+                           machine, current_usage, notes, status, date_created,requisition_number
                     FROM diecutview                    
                     {baseWhereClause} {dateFilterClause} {searchFilterClause}
                     ORDER BY date_created DESC
@@ -2393,7 +2387,8 @@ namespace BoxSmart_ERP.Services
                                     CurrentUsage = reader.GetInt32(reader.GetOrdinal("current_usage")),
                                     ItemNotes = reader.IsDBNull(reader.GetOrdinal("notes")) ? null : reader.GetString(reader.GetOrdinal("notes")),
                                     ItemStatus = reader.GetString(reader.GetOrdinal("status")),
-                                    DateCreated = reader.GetDateTime(reader.GetOrdinal("date_created"))
+                                    DateCreated = reader.GetDateTime(reader.GetOrdinal("date_created")),
+                                    RequisitionNumber = reader.GetString(reader.GetOrdinal("requisition_number")),
                                 });
                             }
                         }
@@ -2702,6 +2697,7 @@ namespace BoxSmart_ERP.Services
             }
         }
 
+        //TODO: Include date condition - ageing of rubberdie plates and diecut tools
         public string GetRubberdieUsageLimitItems()
         {
             var results = new List<object>();
@@ -2736,19 +2732,23 @@ namespace BoxSmart_ERP.Services
         }
         public string GetDiecutUsageLimitItems()
         {
+            SpecimenCycles cyclesData = GetSpecimenCycles();
+
             var results = new List<object>();
 
             using (var conn = new NpgsqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new NpgsqlCommand(@"
+                using (var cmd = new NpgsqlCommand(@$"
                 SELECT dc.id,tr.item_description,co.organization_name,dc.current_usage,fm.code || '-' || fm.machine_name as machine,tr.requested_date
 	            FROM diecut_tools dc
 	                JOIN tooling_requests tr ON tr.request_id=dc.request_id
 	                JOIN customer cu ON tr.customer_id = cu.id
 	                JOIN contact co ON cu.contact_id = co.id
 	                JOIN flexo_machines fm ON fm.id=dc.machine_id
-	            WHERE  current_usage >= life_cycle * 0.8 LIMIT 10;", conn))
+	            WHERE  current_usage >= life_cycle * 0.8 
+                       OR dc.date_created <= NOW() - INTERVAL '{cyclesData.diecut_date_cycle} years'
+                LIMIT 10;", conn))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -2789,7 +2789,7 @@ namespace BoxSmart_ERP.Services
             catch (Exception ex)
             {
                 LogErrorMessage(ex, "DeleteToolingRequest");
-                MessageBox.Show("An error occurred while deleting the request: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("An error occurred while deleting the request: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false; 
             }
         }
@@ -2813,7 +2813,7 @@ namespace BoxSmart_ERP.Services
             catch (Exception ex)
             {
                 LogErrorMessage(ex, "GetRequestRowCountByRequisitionNumber");
-                MessageBox.Show("An error occurred while deleting the request: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);                
+                MessageBox.Show("An error occurred while deleting the request: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);                
             }
             return recordsCount; 
         }
@@ -2840,10 +2840,98 @@ namespace BoxSmart_ERP.Services
                 catch (Exception ex)
                 {
                     LogErrorMessage(ex, "CancelRequest");
-                    MessageBox.Show("An error occurred while cancelling the request: " + ex.Message, "BoxSmart ERP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("An error occurred while cancelling the request: " + ex.Message, Config.ApplicationName, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return false; // Return false if an error occurred
                 }
             }
+        }
+
+        internal async Task DisposeDiecutItem(int diecutId, int SessionUserID)
+        {
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    if (connection.State != System.Data.ConnectionState.Open)
+                        connection.Open();
+                    string sql = "UPDATE diecut_tools SET status_id = @status_id,  " +
+                                    "date_disposed = @date_disposed, disposed_by = @disposed_by " +
+                                    "WHERE id = @diecutId;";                   
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@status_id", Config.DiecutDisposeStatus);                        
+                        cmd.Parameters.AddWithValue("@date_disposed", DateTime.Now);
+                        cmd.Parameters.AddWithValue("@disposed_by", SessionUserID);
+                        cmd.Parameters.AddWithValue("@diecutId", diecutId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }                
+            }
+            catch (Exception ex)
+            {
+                LogErrorMessage(ex, "DisposeDiecutItem");
+                Console.WriteLine($"Error updating diecut_tools: {ex.Message}");
+                throw;
+            }
+        }
+
+        public class SpecimenCycles
+        {
+            public int row_limit { get; set; }
+            public int rubberdie_life_cycle { get; set; }
+            public short rubberdie_date_cycle { get; set; } // Changed to short for smallint
+            public int diecut_life_cycle { get; set; }
+            public short diecut_date_cycle { get; set; }     // Changed to short for smallint
+
+            // Optional: Add a default constructor or a constructor with parameters
+            public SpecimenCycles()
+            {
+                // Default values if no valid settings are found
+                row_limit = 0; // Or a sensible default
+                rubberdie_life_cycle = 0;
+                rubberdie_date_cycle = 0;
+                diecut_life_cycle = 0;
+                diecut_date_cycle = 0;
+            }
+        }
+
+        public SpecimenCycles GetSpecimenCycles()
+        {
+            SpecimenCycles cycles = null; // Initialize to null, will be populated if data is found
+
+            string query = "SELECT rowlimit, rubberdie_life_cycle, rubberdie_date_cycle, diecut_life_cycle, diecut_date_cycle " +
+                           "FROM settings WHERE isvalid=true;";
+            try
+            {
+                using (var connection = new NpgsqlConnection(_connectionString))
+                {
+                    connection.Open();
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                cycles = new SpecimenCycles
+                                {
+                                    row_limit = reader.GetInt32(reader.GetOrdinal("rowlimit")),
+                                    rubberdie_life_cycle = reader.GetInt32(reader.GetOrdinal("rubberdie_life_cycle")),
+                                    rubberdie_date_cycle = reader.GetInt16(reader.GetOrdinal("rubberdie_date_cycle")),
+                                    diecut_life_cycle = reader.GetInt32(reader.GetOrdinal("diecut_life_cycle")),
+                                    diecut_date_cycle = reader.GetInt16(reader.GetOrdinal("diecut_date_cycle"))
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Config.LogErrorMessage(ex, "GetSpecimenCycles");
+                MessageBox.Show($"Error fetching specimen cycles: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return cycles;
         }
     }
 }

@@ -51,7 +51,7 @@
             webView21.Dock = DockStyle.Top;
             webView21.Location = new Point(0, 0);
             webView21.Name = "webView21";
-            webView21.Size = new Size(1294, 20);
+            webView21.Size = new Size(1320, 20);
             webView21.TabIndex = 0;
             webView21.Visible = false;
             webView21.ZoomFactor = 1D;
@@ -71,8 +71,8 @@
             // splitContainer1.Panel2
             // 
             splitContainer1.Panel2.Controls.Add(webViewApps);
-            splitContainer1.Size = new Size(1294, 762);
-            splitContainer1.SplitterDistance = 189;
+            splitContainer1.Size = new Size(1320, 819);
+            splitContainer1.SplitterDistance = 192;
             splitContainer1.TabIndex = 1;
             // 
             // webViewSideBar
@@ -83,7 +83,7 @@
             webViewSideBar.Dock = DockStyle.Fill;
             webViewSideBar.Location = new Point(0, 0);
             webViewSideBar.Name = "webViewSideBar";
-            webViewSideBar.Size = new Size(187, 760);
+            webViewSideBar.Size = new Size(190, 817);
             webViewSideBar.TabIndex = 0;
             webViewSideBar.ZoomFactor = 1D;
             webViewSideBar.NavigationCompleted += webViewSideBar_NavigationCompleted;
@@ -96,7 +96,7 @@
             webViewApps.Dock = DockStyle.Fill;
             webViewApps.Location = new Point(0, 0);
             webViewApps.Name = "webViewApps";
-            webViewApps.Size = new Size(1099, 760);
+            webViewApps.Size = new Size(1122, 817);
             webViewApps.TabIndex = 0;
             webViewApps.ZoomFactor = 1D;
             webViewApps.CoreWebView2InitializationCompleted += webViewApps_CoreWebView2InitializationCompleted;
@@ -107,7 +107,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1294, 762);
+            ClientSize = new Size(1320, 819);
             Controls.Add(splitContainer1);
             Controls.Add(webView21);
             Icon = (Icon)resources.GetObject("$this.Icon");

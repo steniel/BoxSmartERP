@@ -3,13 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Diecut Item</title>
+    <title>Dispose Diecut Item</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <link rel="stylesheet" href="custom-scrollbars.css">
     <style>
         body {
@@ -159,125 +156,80 @@
     </style>
 </head>
 <body>
-    
     <div class="container">
         <div class="close-button" id="closeButton" title="Close">×</div>
-        <div class="requests-header" id="headerText1">
-            <h2><i class="fa fa-edit"></i> Update Diecut Item</h2>
+        <div class="requests-header">
+            <h3><i class="fa-solid bi-trash"></i>(DANGER ZONE) Dispose Diecut Item</h3>
         </div>
-        
-        
         <div class="menu-separator"></div>
 
-        <div class="form-row-compact">
-            <div class="form-group">
-                <input type="hidden" class="form-control" id="loggedUsername" name="loggedUsername" maxlength="50" required readonly>
-                <input type="hidden" class="form-control" id="loggedUserId" name="loggedUserId" maxlength="3" required readonly>
-            </div>
-        </div>
+        <form>
+            <input type="hidden" class="form-control" id="loggedUsername" name="loggedUsername" maxlength="50" readonly>
+            <input type="hidden" class="form-control" id="loggedUserId" name="loggedUserId" maxlength="3" readonly>
+            <input type="hidden" class="form-control" id="itemPriority" name="itemPriority" required readonly>
+            <input type="hidden" class="form-control" id="DiecutID" name="DiecutID" readonly>
 
-        <div class="form-row-compact">
-            <div class="form-group">
-                <label for="customerName" class="form-label">Customer:</label>
-                <input type="text" class="form-control" id="customerName" name="customerName" required readonly>
-            </div>
-
-            <div class="form-group">
-                <label for="dateCreated" class="form-label">Date Created:</label>
-                <input type="text" class="form-control" id="dateCreated" name="dateCreated" required readonly>
-            </div>
-        </div>
-
-        <div class="form-row-compact">
-            <div class="form-group">
-                <label for="diecutDescription" class="form-label">Diecut Description:</label>
-                <input type="text" class="form-control" id="diecutDescription" name="diecutDescription" required readonly>
-            </div>
-            <div class="form-group">
-                <label for="requisitionNumber" class="form-label">Control #:</label>
-                <input type="text" class="form-control" id="requisitionNumber" name="requisitionNumber" required readonly>
-            </div>
-        </div>
-
-        <div class="form-row-compact">
-            <div class="form-group">
-                <label for="itemNotes" class="form-label">Remarks:</label>
-                <input type="text" class="form-control" id="itemNotes" name="itemNotes" required readonly>
-            </div>
-            <div class="form-group">
-                <label for="itemPriority" class="form-label">Priority:</label>
-                <input type="text" class="form-control" id="itemPriority" name="itemPriority" required readonly>
-            </div>
-        </div>
-        
-        <div class="form-row-compact">
-            <div style="flex: 1;">
-                <label for="assign_machine">
-                    <input type="checkbox" id="assign_machine" name="assign_machine" value="Assign Machine">
-                    Assign Machine:
-                </label><br /><br />
-                <div id="machineNameWrapper" style="display: none; flex: 1;">                
-                    <select id="machineName" name="machineName" class="form-control machine-select">
-                        <option value="">Select Machine</option>
-                    </select>
-                </div><br />
+            <div class="form-row-compact">
                 <div class="form-group">
-                    <label for="currentMachine" class="form-label">Current Machine:</label>
-                    <input type="text" class="form-control" id="currentMachine" name="currentMachine" required readonly>
+                    <label for="customerName" class="form-label">Customer:</label>
+                    <input type="text" class="form-control" id="customerName" name="customerName" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="dateCreated" class="form-label">Date Created:</label>
+                    <input type="text" class="form-control" id="dateCreated" name="dateCreated" readonly>
                 </div>
             </div>
-        </div>
-        
-        <div class="form-row-compact">
-            <div class="form-group">
-                <label for="assignedTo" class="form-label">Assigned to:</label>
-                <input type="text" class="form-control" id="assignedTo" name="assignedTo" required readonly>
-            </div>
-            <div class="form-group">
-                <label for="diecutNumber" class="form-label">Diecut Number:<span class="required">*</span></label>
-                <input type="number" class="form-control" id="diecutNumber" name="diecutNumber" max="10" maxlength="2" required>
-            </div>
-        </div>
-        
-        <div class="text-end">
-            <button type="submit" class="btn btn-primary" id="submitRequestMain">
-                <i class="bi list-inline-item"></i> Submit
-            </button>
-        </div>
 
+            <div class="form-row-compact">
+                <div class="form-group">
+                    <label for="diecutDescription" class="form-label">Diecut Description:</label>
+                    <input type="text" class="form-control" id="diecutDescription" name="diecutDescription" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="requisitionNumber" class="form-label">Control #:</label>
+                    <input type="text" class="form-control" id="requisitionNumber" name="requisitionNumber" readonly>
+                </div>
+            </div>
+
+            <div class="form-row-compact">
+                <div class="form-group">
+                    <label for="currentMachine" class="form-label">Current Machine:</label>
+                    <input type="text" class="form-control" id="currentMachine" name="currentMachine" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="itemNotes" class="form-label">Remarks:</label>
+                    <input type="text" class="form-control" id="itemNotes" name="itemNotes" readonly>
+                </div>
+            </div>
+
+            <div class="form-row-compact">
+                <div class="form-group">
+                    <label for="printcardNumber" class="form-label">Printcard #:</label>
+                    <input type="text" class="form-control" id="printcardNumber" name="printcardNumber" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="diecutNumber" class="form-label">Diecut Number:<span class="required">*</span></label>
+                    <input type="number" class="form-control" id="diecutNumber" name="diecutNumber" max="10" maxlength="2" readonly>
+                </div>
+            </div>
+
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary" id="submitRequestMain">
+                    <i class="bi bi-send-fill"></i> Submit
+                </button>
+            </div>
+        </form>
     </div>
-    <script>src = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" </script> 
 
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <script>
-        function sendDiecutUpdate(diecut_number, machine_id, command) {
-            window.chrome.webview.postMessage({
-                DiecutNumber: diecut_number,
-                MachineID: machine_id,
-                Command: command
-            });
-        }
+
         document.getElementById('closeButton').addEventListener('click', function () {
-            // Send a message to C# to close the WebView or form              
-            sendDiecutUpdate(0, 0, "close");
+            // Send a message to C# to close the WebView or form
+            window.chrome.webview.postMessage({ Command: "close" });
         });
 
-        const originalMachineName = document.getElementById('currentMachine').value;
-
         document.addEventListener('DOMContentLoaded', function () {
-            const checkbox = document.getElementById("assign_machine");
-            const machineWrapper = document.getElementById("machineNameWrapper");
-            const machineSelect = document.getElementById("machineName");
-
-            checkbox.addEventListener("change", function () {
-                if (this.checked) {
-                    machineWrapper.style.display = "flex";
-                    machineSelect.disabled = false;
-                } else {
-                    machineWrapper.style.display = "none";
-                    machineSelect.disabled = true;
-                }
-            });
 
             const diecutNumberInput = document.getElementById('diecutNumber');
             if (diecutNumberInput) {
@@ -299,16 +251,19 @@
                 const bgColor = priorityColors[value];
                 input.style.backgroundColor = bgColor || 'transparent';
                 input.style.color = (value === 'Normal') ? '#000000' : '';
-            }            
+            }
+
+            function sendDiecutUpdate(diecut_number, machine_id, command) {
+                window.chrome.webview.postMessage({
+                    DiecutNumber: diecut_number,
+                    MachineID: machine_id,
+                    Command: command
+                });
+            }
 
             if (input) {
-                // Trigger once on load
                 updatePriorityFieldColor();
-
-                // Handle manual typing
                 input.addEventListener('input', updatePriorityFieldColor);
-
-                // Watch for programmatic value changes (e.g. from WebView or setTextValue)
                 const observer = new MutationObserver(() => updatePriorityFieldColor());
 
                 observer.observe(input, {
@@ -316,17 +271,15 @@
                     attributeFilter: ['value']
                 });
 
-                // Also patch setTextValue to trigger color update
                 window.setTextValue = function (elementId, value) {
                     const el = document.getElementById(elementId);
                     if (el) {
                         el.value = value;
-                        if (el === input) updatePriorityFieldColor(); // Trigger manually
+                        if (el === input) updatePriorityFieldColor();
                     }
                 };
             }
 
-            // Global setter examples (optional)
             window.setLoggedUsername = function (username) {
                 const loggedUserInput = document.getElementById('loggedUsername');
                 if (loggedUserInput) {
@@ -342,47 +295,32 @@
                     loggedUserInput.readOnly = true;
                 }
             };
-            const submitBtn = document.getElementById('submitRequestMain');
-            const diecutInput = document.getElementById('diecutNumber');
 
-            if (submitBtn && diecutInput) {
+            window.setDiecutID = function (diecutId) {
+                const diecutSelectedId = document.getElementById('DiecutID');
+                if (diecutSelectedId) {
+                    diecutSelectedId.value = diecutId;
+                    diecutSelectedId.readOnly = true;
+                }
+            };
+            const submitBtn = document.getElementById('submitRequestMain');
+
+            if (submitBtn) {
                 submitBtn.addEventListener('click', function (e) {
                     e.preventDefault();
-
-                    const diecutValue = parseInt(diecutInput.value, 10);
-
-                    if (isNaN(diecutValue) || diecutValue <= 0) {
-                        toastr.error("Diecut Number must be greater than 0.", "Error", { positionClass: "toast-top-full-width" });
-                        diecutInput.focus();
-                        return;
-                    }
-                    const machineSelect = document.getElementById('machineName');
-                    const machineWrapper = document.getElementById('machineNameWrapper');
-                    // Check if the wrapper is visible
-                    const isVisible = machineWrapper.offsetParent !== null; // Returns false if hidden
-                    const selectedMachineValue = machineSelect.value;
-                    if (isVisible) {
-                        if (!selectedMachineValue) {
-                            e.preventDefault(); // Prevent form submission if needed
-                            toastr.error("Please select a machine from the dropdown.", "Error", { positionClass: "toast-top-full-width" });
-                            machineSelect.focus();
-                            return;
-                        }
-                        console.log('Selected machine ID:', selectedMachineValue);
-                    } else {
-                        console.log('Machine select is hidden, skipping validation.');
-                    }
 
                     const confirmUpdate = confirm("Are you sure you want to proceed with the update?");
                     if (confirmUpdate) {
                         // Proceed with update logic here
                         console.log("User confirmed update. Proceeding...");
-                        let machineValueSelected = 0;
-                        if (selectedMachineValue && !isNaN(selectedMachineValue)) {
-                            machineValueSelected = parseInt(selectedMachineValue, 10);
-                        }
+                        //let machineValueSelected = 0;
+                        //if (selectedMachineValue && !isNaN(selectedMachineValue)) {
+                        //    machineValueSelected = parseInt(selectedMachineValue, 10);
+                        //}
 
-                        sendDiecutUpdate(diecutValue, machineValueSelected, "update");
+                        //sendDiecutUpdate(diecutValue, machineValueSelected, "update");
+
+                        window.chrome.webview.postMessage({ Command: "dispose" });
 
                     } else {
                         console.log("User cancelled update.");
@@ -401,20 +339,6 @@
                 alert("Error: " + response.message);
             }
         });
-
-        function populateMachineDropdown(machines) {
-            const select = document.getElementById("machineName");
-            // Clear previous entries
-            select.innerHTML = '<option value="" selected></option>';
-
-            machines.forEach(machine => {
-                const option = document.createElement("option");
-                option.value = machine.id;
-                option.text = machine.name;
-                select.appendChild(option);
-            });
-        }
-
     </script>
 
 </body>

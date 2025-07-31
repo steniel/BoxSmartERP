@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <style>
         body {
@@ -192,6 +193,35 @@
         .table-container::-webkit-scrollbar-thumb {
             transition: background-color 0.3s ease;
         }
+        /* Prevent clicks on disabled links */
+        .disabled-item {
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        /* Dark Theme Select Dropdown */
+        .action-select {
+            background-color: #2c2f33;
+            color: #f1f1f1;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 0.875rem;
+            min-width: 160px;
+        }
+
+            /* On hover or focus */
+            .action-select:hover,
+            .action-select:focus {
+                border-color: #5fa8d3;
+                outline: none;
+                background-color: #3a3d42;
+            }
+
+            /* Disabled options */
+            .action-select option:disabled {
+                color: #888;
+                background-color: #2c2f33;
+            }
     </style>
 
 </head>
@@ -231,6 +261,7 @@
                     <thead>
                         <tr>
                             <th>Diecut ID</th>
+                            <th>Actions</th>
                             <th>Customer</th>
                             <th>Description</th>
                             <th>Diecut #</th>
@@ -240,8 +271,9 @@
                             <th>Assigned Mac</th>
                             <th>Current Usage</th>
                             <th>Remarks</th>
-                            <th>Status</th>     
+                            <th>Status</th>
                             <th>Date Created</th>
+                            <th>Control #</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -341,13 +373,35 @@
                     }
                 },
                 columns: [
-                    { data: 'diecutId',"visible":false},
+                    { data: 'diecutId', "visible": false },
+                    { // Actions column
+                        "data": null,
+                        "title": "Actions",
+                        "orderable": false,
+                        "searchable": false,
+                        "render": function (data, type, row) {
+                            const diecutId = row.diecutId;        
+                            const requisitionNumber = row.requisitionNumber;
+                            return `
+                            <select class="form-select form-select-sm action-select"
+                                    data-id="${diecutId}" 
+                                    data-requisition_number="${requisitionNumber}">
+                                <option value="">Select Action</option>
+                                <option value="diecut_update">✏️ Update Diecut Item</option>
+                                <option value="diecut_view">👁️ Diecut Item Details</option>
+                                <option value="diecut_assign_maintenance"}>🛠️ Diecut Item for maintenance</option>
+                                <option value="diecut_dispose">❌ Dispose Diecut Item</option>                                
+                                <option value="diecut_assign_item">⚙️ Change/Assign Machine</option>    
+                            </select>
+                            `;
+                        }
+                    },
                     { data: 'organizationName' },
                     { data: 'itemDescription' },
                     { data: 'diecutNumber' },
-                    { data: 'rackNumber' },
-                    { data: 'rowNumber' },
-                    { data: 'diecutType' },
+                    { data: 'rackNumber', "visible": false },
+                    { data: 'rowNumber', "visible": false },
+                    { data: 'diecutType', "visible": false },
                     { data: 'assignedMachine' },
                     { data: 'currentUsage' },
                     { data: 'itemNotes' },
@@ -360,7 +414,8 @@
                             }
                             return data;
                         }
-                    }
+                    },
+                    { data: 'requisitionNumber' }
                 ],
                 scrollY: '100%',        // Changed from true to '100%'
                 scrollCollapse: true,
@@ -379,8 +434,6 @@
                 rowCallback: function (row, data, index) {
                     $(row).attr('data-diecut-id', data.diecutId);
                 }
-                // You might also want to implement server-side ordering (via 'order' parameter in data.order)
-                // This would involve modifying your C# query to include ORDER BY based on DataTables' request.
             });
                     
 
@@ -396,7 +449,49 @@
         $(document).ready(function () {
             populateYearSelect();
             initializeDataTable(); // Initial load of the table
+            $(document).on('change', '.action-select', function () {
+                const action = $(this).val();
+                const diecutId = $(this).data('id');
+                const requisitionNumber = $(this).data('requisition_number');
+
+                if (!action) return; // No action selected
+
+                // Reset the dropdown
+                $(this).val('');
+
+                switch (action) {
+                    case 'diecut_update':                        
+                        console.log(`diecut_update ${diecutId}`);
+                        editRecentRequest("diecut_update", diecutId, requisitionNumber);
+                        break;
+                    case 'diecut_view':
+                        // Call view logic
+                        console.log(`diecut_view ${diecutId}`);                        
+                        editRecentRequest("diecut_view", diecutId, requisitionNumber);
+                        break;
+                    case 'diecut_assign_maintenance':                        
+                        console.log(`diecut_assign_maintenance ${diecutId}`);
+                        editRecentRequest("diecut_assign_maintenance", diecutId, requisitionNumber);
+                        break;
+                    case 'diecut_dispose':                        
+                        console.log(`diecut_dispose ${diecutId}`);
+                        editRecentRequest("diecut_dispose", diecutId, requisitionNumber);
+                        break;
+                    case 'diecut_assign_item':                        
+                        console.log(`diecut_assign_item ${diecutId}`);
+                        editRecentRequest("diecut_assign_item", diecutId, requisitionNumber);
+                        break;
+                }
+            });
         });
+
+        function editRecentRequest(command, id, requisition_number) {
+            window.chrome.webview.postMessage({
+                Command: command,
+                DiecutID: id,
+                RequisitionNumber: requisition_number
+            });
+        }
         
     </script>
 

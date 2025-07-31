@@ -6,6 +6,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -30,7 +31,8 @@ namespace BoxSmart_ERP
             this.Controls.Add(webViewReport);
 
             // Set form properties
-            this.Text = "View Report";
+            string RequisitionNumber = ExtractRequisitionNumber(pdfUrl);
+            this.Text = $"View Report - Control #: {RequisitionNumber}";
             this.Size = new System.Drawing.Size(800, 600);
 
             // Load PDF when form is shown
@@ -69,5 +71,21 @@ namespace BoxSmart_ERP
             // Optionally, delete the temporary PDF file
             if (File.Exists(tempFilePath)) File.Delete(tempFilePath);
         }
+
+        public static string ExtractRequisitionNumber(string input)
+        {
+            string pattern = @"S\s-\s\d{4}\s\/\s\d+[A-Z]{1,2}";
+            Match match = Regex.Match(input, pattern);
+
+            if (match.Success)
+            {
+                return match.Value;
+            }
+            else
+            {
+                return "";
+            }
+        }
+
     }
 }

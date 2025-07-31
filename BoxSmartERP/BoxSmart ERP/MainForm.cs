@@ -8,9 +8,12 @@ using Newtonsoft.Json.Linq;
 using Npgsql;
 using NpgsqlTypes;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.Logical;
 using PowerArgs;
+using System;
 using System.Configuration;
 using System.Data;
+using System.Formats.Asn1;
 using System.Runtime.InteropServices;
 using System.Security.Permissions;
 using System.Text.Json;
@@ -19,6 +22,7 @@ using System.Windows.Forms;
 using static BoxSmart_ERP.Services.PostgreSQLServices;
 using static System.Collections.Specialized.BitVector32;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace BoxSmart_ERP
@@ -70,7 +74,7 @@ namespace BoxSmart_ERP
             pgsqlErrorDetails = _config["ConnectionStrings:ErrorDetails"];      
 
             splitContainer1.BackColor = ColorTranslator.FromHtml("#282A2D");
-            this.Text = $"BoxSmart ERP Version {_appVersion}"; // Set the title of the main form
+            this.Text = $"{Config.ApplicationName} - Version {_appVersion}"; // Set the title of the main form
             //background.Show(); // Show the background form           
 
         }
@@ -102,7 +106,7 @@ namespace BoxSmart_ERP
                 if (commandReceived == "EditRequest")
                 {
                     //Check if user has permission to edit
-                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_create") || await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_delete") || await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update") || await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "rubberdie_create") || await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "rubberdie_delete") || await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "rubberdie_update");
+                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "edit_request");
                     if (!hasPermission)
                     {
                         MessageBox.Show("You do not have permission to edit requests.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -113,7 +117,7 @@ namespace BoxSmart_ERP
                     {
                         _loadDashboardDataAfterNavigation = false;
                         EditRecentRequest editRequest = new(_config, controlSequence);
-                        editRequest.Show(); // Show the EditRecentRequest form
+                        editRequest.ShowDialog();
                     }
                     else
                     {
@@ -468,7 +472,8 @@ namespace BoxSmart_ERP
                    $"updateMetricValue('totalDiecutMould', {dashboardMetrics.TotalActiveDiecuts});" +
                    $"updateMetricValue('totalRubberdies', {dashboardMetrics.TotalActiveRubberdie});" +
                    $"updateDiecutInMaintenance('totalDiecutInMaintenance', {dashboardMetrics.TotalDiecutInMaintenance});" +
-                   $"tryLoadRecentRequests();"
+                   $"tryLoadRecentRequests();" +
+                   $"updateTotalDisposedDiecuts('totalDisposed', {dashboardMetrics.totalDiecutDisposed});"
                 );
                 await LoadDiecutPieAsync(); //piechart for Diecut
 
@@ -509,7 +514,170 @@ namespace BoxSmart_ERP
                 MessageBox.Show($"Error fetching Printcard data: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }                   
         }
-        
+
+        private async Task HandleDiecutActionAsync(string action, string expectedStatus, string diecutActionDescription, string permissionKey, string json)
+        {
+            bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, permissionKey);
+            if (!hasPermission)
+            {
+                MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var data = JsonSerializer.Deserialize<DiecutMessage>(json);
+            int diecutId = (int)(data?.DiecutID);
+            string requisitionNumber = data?.requisitionNumber ?? "";
+
+            if (CheckDiecutItemStatus(diecutId, expectedStatus))
+            {
+                if (action.Contains("diecut_assign_item"))
+                {
+                    EditDiecutItem editDiecut = new(_config, diecutId);
+                    editDiecut.Show();                    
+                }else if (action.Contains("diecut_update"))
+                {
+                    EditDiecutItem editDiecut = new(_config, diecutId, "");
+                    editDiecut.ShowDialog();
+                }
+                else if (action.Contains("diecut_assign_maintenance"))
+                {
+                  AddMaintenance addMaintenance = new(_config, diecutId);
+                  addMaintenance.ShowDialog();
+                }
+                else if (action.Contains("diecut_dispose"))
+                {
+                    // Open the dispose form for the diecut item
+                    //Check if diecut was almost two years old or the usage is over 80%
+                    if (!CheckDiecutItemUsage(diecutId))
+                    {
+                        MessageBox.Show("This diecut item cannot be disposed because it is either too new or has not reached the usage limit.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
+                    }
+                    DisposeDiecut disposeDiecut = new(_config, diecutId);
+                    disposeDiecut.ShowDialog();
+                }
+                else
+                {
+                    //EditDiecutItem editDiecut = new(_config, diecutId);
+                    //editDiecut.Show();
+                }
+            }
+            else
+            {
+                MessageBox.Show($"You can only {diecutActionDescription} an item with status: {expectedStatus}.",
+                                "Diecut Development",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Warning);
+            }
+        }
+
+        public class SpecimenCycles
+        {
+            public int row_limit { get; set; }
+            public int rubberdie_life_cycle { get; set; }
+            public short rubberdie_date_cycle { get; set; } // Changed to short for smallint
+            public int diecut_life_cycle { get; set; }
+            public short diecut_date_cycle { get; set; }     // Changed to short for smallint
+
+            // Optional: Add a default constructor or a constructor with parameters
+            public SpecimenCycles()
+            {
+                // Default values if no valid settings are found
+                row_limit = 0; // Or a sensible default
+                rubberdie_life_cycle = 0;
+                rubberdie_date_cycle = 0;
+                diecut_life_cycle = 0;
+                diecut_date_cycle = 0;
+            }
+        }
+
+        public SpecimenCycles GetSpecimenCycles()
+        {
+            SpecimenCycles cycles = null; // Initialize to null, will be populated if data is found
+
+            string query = "SELECT rowlimit, rubberdie_life_cycle, rubberdie_date_cycle, diecut_life_cycle, diecut_date_cycle " +
+                           "FROM settings WHERE isvalid=true;";
+            try
+            {
+                using (var connection = new NpgsqlConnection(connectionString))
+                {
+                    connection.Open();
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                cycles = new SpecimenCycles
+                                {
+                                    row_limit = reader.GetInt32(reader.GetOrdinal("rowlimit")),
+                                    rubberdie_life_cycle = reader.GetInt32(reader.GetOrdinal("rubberdie_life_cycle")),
+                                    rubberdie_date_cycle = reader.GetInt16(reader.GetOrdinal("rubberdie_date_cycle")), 
+                                    diecut_life_cycle = reader.GetInt32(reader.GetOrdinal("diecut_life_cycle")),
+                                    diecut_date_cycle = reader.GetInt16(reader.GetOrdinal("diecut_date_cycle")) 
+                                };
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Config.LogErrorMessage(ex, "GetSpecimenCycles");
+                MessageBox.Show($"Error fetching specimen cycles: {ex.Message}", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
+            return cycles; 
+        }
+
+        private bool CheckDiecutItemUsage(int diecutId)
+        {
+            SpecimenCycles cyclesData = GetSpecimenCycles();
+
+            DateTime currentDate = DateTime.Now;
+            DateTime fiveYearsAgo = currentDate.AddYears(-cyclesData.diecut_date_cycle);
+            DateTime nineteenMonthsAgo = currentDate.AddMonths(-19);
+
+            int diecutLifecycle = cyclesData.diecut_life_cycle; 
+            // SQL query to check conditions
+            string query = @"
+            SELECT EXISTS (
+                SELECT 1 
+                FROM diecut_tools 
+                WHERE id = @id 
+                AND life_cycle = @lifeCycle
+                AND (
+                    current_usage >= life_cycle * 0.8
+                    OR 
+                    date_created <= @fiveYearsAgo
+                )
+            )";
+
+            try
+            {
+                using (var connection = new NpgsqlConnection(connectionString))
+                {
+                    connection.Open();
+
+                    using (var command = new NpgsqlCommand(query, connection))
+                    {
+                        // Add parameters to prevent SQL injection
+                        command.Parameters.AddWithValue("id", diecutId);
+                        command.Parameters.AddWithValue("lifeCycle", diecutLifecycle);
+                        command.Parameters.AddWithValue("fiveYearsAgo", fiveYearsAgo);
+
+                        return (bool)command.ExecuteScalar();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Config.LogErrorMessage(ex, "CheckDiecutItemUsage"); 
+                MessageBox.Show($"Error checking diecut item usage: {ex.Message} \n Please see c:\\Log file.", "Database Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                throw;
+            }
+        }
+
         private async void webViewApps_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             string currentHtml = webViewApps.Source.LocalPath;
@@ -545,103 +713,20 @@ namespace BoxSmart_ERP
                 /*********************************************************************************************/
                 if (action.Contains("diecut_update"))
                 {
-                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
-                    if (!hasPermission)
-                    {
-                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
-                    string commandReceived = data?.Command ?? "";
-                    int diecutId = (int)(data?.DiecutID);
-                    string requisitionNumber = data?.requisitionNumber ?? "";
-                    string status = "Development";
-                    string diecut_action = "add diecut number";
-                    if (CheckDiecutItemStatus(diecutId, status))
-                    {                                
-                        EditDiecutItem editDiecut = new(_config, diecutId);
-                        editDiecut.Show(); 
-                    }
-                    else
-                    {
-                        MessageBox.Show($"You can only {diecut_action} of an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
+                    await HandleDiecutActionAsync(action, "Development", "update", "diecut_update", e.WebMessageAsJson);
                 }
-
-                if (action.Contains("diecut_assign_maintenance"))
+                else if (action.Contains("diecut_assign_maintenance"))
                 {
-                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
-                    if (!hasPermission)
-                    {
-                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
-                    string commandReceived = data?.Command ?? "";
-                    int diecutId = (int)(data?.DiecutID);
-                    string requisitionNumber = data?.requisitionNumber ?? "";
-                    string status = "Active";
-                    string diecut_action = "add to maintenance";
-                    if (CheckDiecutItemStatus(diecutId, status))
-                    {
-                        EditDiecutItem editDiecut = new(_config, diecutId);
-                        editDiecut.Show(); 
-                    }
-                    else
-                    {
-                        MessageBox.Show($"You can only {diecut_action} an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
+                    await HandleDiecutActionAsync(action, "Active", "add to maintenance", "diecut_update", e.WebMessageAsJson);
                 }
-
-                if (action.Contains("diecut_dispose"))
+                else if (action.Contains("diecut_dispose"))
                 {
-                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
-                    if (!hasPermission)
-                    {
-                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
-                    string commandReceived = data?.Command ?? "";
-                    int diecutId = (int)(data?.DiecutID);
-                    string requisitionNumber = data?.requisitionNumber ?? "";
-                    string status = "Active";
-                    string diecut_action = "dispose";
-                    if (CheckDiecutItemStatus(diecutId, status))
-                    {
-                        EditDiecutItem editDiecut = new(_config, diecutId);
-                        editDiecut.Show();
-                    }
-                    else
-                    {
-                        MessageBox.Show($"You can only {diecut_action} an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
+                    await HandleDiecutActionAsync(action, "Active", "dispose", "diecut_update", e.WebMessageAsJson);
                 }
-
-                if (action.Contains("diecut_assign_item"))
+                else if (action.Contains("diecut_assign_item"))
                 {
-                    bool hasPermission = await _permissionService.HasPermissionAsync(AppSession.CurrentUserId, "diecut_update");
-                    if (!hasPermission)
-                    {
-                        MessageBox.Show("Permission is required to update diecut moulds.", "Permission Denied", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        return;
-                    }
-                    var data = JsonSerializer.Deserialize<DiecutMessage>(e.WebMessageAsJson);
-                    string commandReceived = data?.Command ?? "";
-                    int diecutId = (int)(data?.DiecutID);
-                    string requisitionNumber = data?.requisitionNumber ?? "";
-                    string status = "Active";
-                    string diecut_action = "assign to converting machine";
-                    if (CheckDiecutItemStatus(diecutId, status))
-                    {
-                        EditDiecutItem editDiecut = new(_config, diecutId);
-                        editDiecut.Show();
-                    }
-                    else
-                    {
-                        MessageBox.Show($"You can only {diecut_action} an item with status: {status}.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                }
+                    await HandleDiecutActionAsync(action, "Active", "assign to converting machine", "diecut_update", e.WebMessageAsJson);
+                }              
 
                 /*********************************************************************************************/
                 /**************************************End Diecut Section ************************************/
@@ -1391,7 +1476,7 @@ namespace BoxSmart_ERP
             }
         }
 
-        internal void RefreshRequestsList()
+        internal void RefreshWebViewApps()
         {
             webViewApps.CoreWebView2.Reload();
         }

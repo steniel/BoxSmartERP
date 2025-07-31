@@ -11,7 +11,7 @@ namespace BoxSmart_ERP.Services
 {
     internal class Settings
     {
-        public string ApplicationTitle = "BoxSmart ERP";
+        public string ApplicationTitle = Config.ApplicationName;
         private NpgsqlConnection conn; // Initialize this somewhere, e.g., in the constructor
         public Settings(string connectionString)
         {

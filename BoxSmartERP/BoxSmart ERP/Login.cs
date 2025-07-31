@@ -1,9 +1,11 @@
 ﻿using BoxSmart_ERP.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Web.WebView2.Core;
+using Npgsql;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
@@ -12,6 +14,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static BoxSmart_ERP.Services.PostgreSQLServices;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace BoxSmart_ERP
 {
@@ -47,7 +50,7 @@ namespace BoxSmart_ERP
         private bool _isProcessingLogin = false;
         private string systemUserFullname;
         private int systemUserId = 0; // Initialize user ID
-        private void WebView21_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+        private async void  WebView21_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
             // Prevent concurrent execution
             if (_isProcessingLogin) return;
@@ -83,7 +86,7 @@ namespace BoxSmart_ERP
                     }
                     _loginAttemptCounter++;
                     Config.PostgreSQLUsername = credentials.Username; // Store username in Config
-                    SecureString securePassword = new SecureString();
+                    SecureString securePassword = new();
                     foreach (char c in credentials.Password)
                     {
                         securePassword.AppendChar(c);
@@ -91,18 +94,25 @@ namespace BoxSmart_ERP
                     securePassword.MakeReadOnly();
                     Config.PostgreSQLPassword = securePassword;
 
-                    bool isValid = AuthenticateUser(credentials.Username, credentials.Password);
-
+                    bool isValid = await ValidatePgServerCredentialsAsync(credentials.Username, credentials.Password);
                     if (isValid)
                     {
-                        this.Invoke((MethodInvoker)delegate
-                        {
-                            AppSession.StartSession(credentials.Username, systemUserFullname, systemUserId);                            
+                        if (!SetSessionUser(credentials.Username, credentials.Password)) {
+                            this.Invoke((MethodInvoker)delegate {
+                                webView21.CoreWebView2.PostWebMessageAsString(
+                                    JsonSerializer.Serialize(new { error = "User not registered." }));
+                            });
+                            return;
+                        }else {
+                            this.Invoke((MethodInvoker)delegate
+                            {
+                                AppSession.StartSession(credentials.Username, systemUserFullname, systemUserId);
 
-                            this.DialogResult = DialogResult.OK;
-                            this.Close();
-                        });
-                        return;
+                                this.DialogResult = DialogResult.OK;
+                                this.Close();
+                            });
+                            return;
+                        }                            
                     }
 
                     // Handle failed login
@@ -160,6 +170,7 @@ namespace BoxSmart_ERP
             }
         }
 
+
         private void WebView22_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
 
@@ -213,12 +224,49 @@ namespace BoxSmart_ERP
         }
 
 
+        private async Task<bool> ValidatePgServerCredentialsAsync(string username, string password)
+        {
+            try
+            {
+                PostgreSQLServices _dbService;
+                pgsqlHost = _config["ConnectionStrings:PostgreSQLHost"];
+                pgsqlPort = _config["ConnectionStrings:PostgreSQLPort"];
+                pgsqlDatabase = _config["ConnectionStrings:PostgreSQLDatabase"];
+                pgsqlErrorDetails = _config["ConnectionStrings:ErrorDetails"];
+
+                IntPtr ptr = System.Runtime.InteropServices.Marshal.SecureStringToBSTR(Config.PostgreSQLPassword);
+                string plainTextPassword = System.Runtime.InteropServices.Marshal.PtrToStringBSTR(ptr);
+                Config.PostgreSQLConnection = $"Host={pgsqlHost};Port={pgsqlPort};Username={Config.PostgreSQLUsername};Password={plainTextPassword};Database={pgsqlDatabase};Include Error Detail={pgsqlErrorDetails}";
+                string connectionString = Config.PostgreSQLConnection;                
+
+                using (var conn = new NpgsqlConnection(connectionString))
+                {
+                    // Attempt to open the connection to verify credentials
+                    await conn.OpenAsync();
+                    return true; // Connection successful, credentials are valid
+                }
+            }
+            catch (NpgsqlException ex)
+            {
+                // Handle specific PostgreSQL errors (e.g., invalid credentials)
+                if (ex.Message.Contains("authentication failed") || ex.Message.Contains("role") || ex.Message.Contains("password"))
+                {
+                    return false; // Invalid username or password
+                }
+                throw; // Rethrow other unexpected errors
+            }
+            catch (Exception)
+            {
+                return false; // Other connection issues (e.g., server down)
+            }
+        }
+
         // Your authentication method
         private string pgsqlHost;
         private string pgsqlPort;
         private string pgsqlDatabase;
         private string pgsqlErrorDetails;
-        private bool AuthenticateUser(string username, string password)
+        private bool SetSessionUser(string username, string password)
         {
             PostgreSQLServices _dbService;
             pgsqlHost = _config["ConnectionStrings:PostgreSQLHost"];
