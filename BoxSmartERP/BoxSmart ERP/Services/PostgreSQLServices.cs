@@ -779,7 +779,6 @@ namespace BoxSmart_ERP.Services
             return jsonResult;
         }
 
-
         public class PrintcardItem
         {
             public int PrintcardId { get; set; }
