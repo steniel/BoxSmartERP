@@ -410,9 +410,9 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in SearchPrintcard: {ex.Message}");
-                // In a real app, log this properly.
-                jsonResult = "[]"; // Return empty array on error
+                LogErrorMessage(ex, "SearchPrintcard");
+                Console.WriteLine($"Error in SearchPrintcard: {ex.Message}");                
+                jsonResult = "[]"; 
             }
             return jsonResult;
         }
@@ -457,8 +457,7 @@ namespace BoxSmart_ERP.Services
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in SearchPrintcard: {ex.Message}");
-                // In a real app, log this properly.
+                Console.WriteLine($"Error in SearchPrintcard: {ex.Message}");                
                 jsonResult = "[]"; // Return empty array on error
                 LogErrorMessage(ex, "SearchDiecuts");
             }
@@ -494,8 +493,8 @@ namespace BoxSmart_ERP.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in SearchUsers: {ex.Message}");
-                // In a real app, log this properly.
-                jsonResult = "[]"; // Return empty array on error
+                LogErrorMessage(ex, "SearchUsers");
+                jsonResult = "[]"; 
             }
             return jsonResult;
         }
@@ -773,8 +772,8 @@ namespace BoxSmart_ERP.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in SearchCustomers: {ex.Message}");
-                // In a real app, log this properly.
-                jsonResult = "[]"; // Return empty array on error
+                LogErrorMessage(ex, "SearchCustomers"); 
+                jsonResult = "[]"; 
             }
 
             return jsonResult;
@@ -1324,20 +1323,21 @@ namespace BoxSmart_ERP.Services
                     FROM 
                         public.diecut_tools
                     WHERE 
-                        current_usage >= life_cycle * 0.8 OR 
+                        current_usage >= {cyclesData.diecut_life_cycle} * 0.8 OR 
                         date_created <= NOW() - INTERVAL '{cyclesData.diecut_date_cycle} years';";
                 using (NpgsqlCommand cmdDiecutUsageLimit = new(diecutUsageLimitSql, conn))
                 {
                     metrics.DiecutUsageLimit = Convert.ToInt32(cmdDiecutUsageLimit.ExecuteScalar() ?? 0);
                 }
 
-                string rubberdieUsageLimitSql = @"
+                string rubberdieUsageLimitSql = @$"
                     SELECT 
                        count(*)
                     FROM 
                         public.rubberdie_plates
                     WHERE 
-                        current_usage >= life_cycle * 0.8";
+                        current_usage >= {cyclesData.rubberdie_life_cycle} * 0.8 OR 
+                        date_created <= NOW() - INTERVAL '{cyclesData.rubberdie_date_cycle} years';";
                 using (NpgsqlCommand cmdRubberdieUsageLimit = new(rubberdieUsageLimitSql, conn))
                 {
                     metrics.RubberdieUsageLimit = Convert.ToInt32(cmdRubberdieUsageLimit.ExecuteScalar() ?? 0);
@@ -2700,18 +2700,21 @@ namespace BoxSmart_ERP.Services
         //TODO: Include date condition - ageing of rubberdie plates and diecut tools
         public string GetRubberdieUsageLimitItems()
         {
+            SpecimenCycles cyclesData = GetSpecimenCycles();
+
             var results = new List<object>();
 
             using (var conn = new NpgsqlConnection(_connectionString))
             {
                 conn.Open();
-                using (var cmd = new NpgsqlCommand(@"
+                using (var cmd = new NpgsqlCommand(@$"
                 SELECT rp.id, tr.item_description, co.organization_name, rp.current_usage ,tr.requested_date
                     FROM rubberdie_plates rp
                     JOIN tooling_requests tr ON tr.request_id = rp.request_id
                     JOIN customer cu ON tr.customer_id = cu.id
                     JOIN contact co ON cu.contact_id = co.id
-                WHERE current_usage >= life_cycle * 0.8;", conn))
+                WHERE current_usage >= {cyclesData.rubberdie_life_cycle} * 0.8
+                      OR dc.date_created <= NOW() - INTERVAL '{cyclesData.rubberdie_date_cycle} years';", conn))
                 using (var reader = cmd.ExecuteReader())
                 {
                     while (reader.Read())
@@ -2746,7 +2749,7 @@ namespace BoxSmart_ERP.Services
 	                JOIN customer cu ON tr.customer_id = cu.id
 	                JOIN contact co ON cu.contact_id = co.id
 	                JOIN flexo_machines fm ON fm.id=dc.machine_id
-	            WHERE  current_usage >= life_cycle * 0.8 
+	            WHERE  current_usage >= {cyclesData.diecut_life_cycle} * 0.8 
                        OR dc.date_created <= NOW() - INTERVAL '{cyclesData.diecut_date_cycle} years'
                 LIMIT 10;", conn))
                 using (var reader = cmd.ExecuteReader())
@@ -2846,26 +2849,36 @@ namespace BoxSmart_ERP.Services
             }
         }
 
-        internal async Task DisposeDiecutItem(int diecutId, int SessionUserID)
+        internal async Task DisposeDiecutItem(int diecutId, int SessionUserID, string remarks)
         {
             try
             {
-                using (var connection = new NpgsqlConnection(_connectionString))
+                var connection = new NpgsqlConnection(_connectionString);     
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
                 {
-                    if (connection.State != System.Data.ConnectionState.Open)
-                        connection.Open();
+                    // Set session user_id
+                    using (var command = new NpgsqlCommand($"SET SESSION my.current_user_id = {SessionUserID};", connection))
+                    {                        
+                        command.ExecuteNonQuery();
+                    }
+
+                    // Perform update
                     string sql = "UPDATE diecut_tools SET status_id = @status_id,  " +
-                                    "date_disposed = @date_disposed, disposed_by = @disposed_by " +
-                                    "WHERE id = @diecutId;";                   
+                                  "date_disposed = @date_disposed, disposed_by = @disposed_by, dispose_remarks=@dispose_remarks " +
+                                  "WHERE id = @diecutId;";
                     using (var cmd = new NpgsqlCommand(sql, connection))
                     {
-                        cmd.Parameters.AddWithValue("@status_id", Config.DiecutDisposeStatus);                        
+                        cmd.Parameters.AddWithValue("@status_id", Config.DiecutDisposeStatus);
                         cmd.Parameters.AddWithValue("@date_disposed", DateTime.Now);
                         cmd.Parameters.AddWithValue("@disposed_by", SessionUserID);
                         cmd.Parameters.AddWithValue("@diecutId", diecutId);
+                        cmd.Parameters.AddWithValue("@dispose_remarks", remarks);
                         cmd.ExecuteNonQuery();
                     }
-                }                
+
+                    transaction.Commit();
+                }                   
             }
             catch (Exception ex)
             {
@@ -2882,6 +2895,9 @@ namespace BoxSmart_ERP.Services
             public short rubberdie_date_cycle { get; set; } // Changed to short for smallint
             public int diecut_life_cycle { get; set; }
             public short diecut_date_cycle { get; set; }     // Changed to short for smallint
+            public bool isvalid { get; set; } // Assuming you want to keep track of validity
+            public bool enable_checks { get; set; } // Assuming you want to keep track of whether checks are enabled
+
 
             // Optional: Add a default constructor or a constructor with parameters
             public SpecimenCycles()
@@ -2892,6 +2908,8 @@ namespace BoxSmart_ERP.Services
                 rubberdie_date_cycle = 0;
                 diecut_life_cycle = 0;
                 diecut_date_cycle = 0;
+                isvalid = true;
+                enable_checks = true;
             }
         }
 
@@ -2899,7 +2917,7 @@ namespace BoxSmart_ERP.Services
         {
             SpecimenCycles cycles = null; // Initialize to null, will be populated if data is found
 
-            string query = "SELECT rowlimit, rubberdie_life_cycle, rubberdie_date_cycle, diecut_life_cycle, diecut_date_cycle " +
+            string query = "SELECT rowlimit, rubberdie_life_cycle, rubberdie_date_cycle, diecut_life_cycle, diecut_date_cycle, enable_checks " +
                            "FROM settings WHERE isvalid=true;";
             try
             {
@@ -2918,7 +2936,8 @@ namespace BoxSmart_ERP.Services
                                     rubberdie_life_cycle = reader.GetInt32(reader.GetOrdinal("rubberdie_life_cycle")),
                                     rubberdie_date_cycle = reader.GetInt16(reader.GetOrdinal("rubberdie_date_cycle")),
                                     diecut_life_cycle = reader.GetInt32(reader.GetOrdinal("diecut_life_cycle")),
-                                    diecut_date_cycle = reader.GetInt16(reader.GetOrdinal("diecut_date_cycle"))
+                                    diecut_date_cycle = reader.GetInt16(reader.GetOrdinal("diecut_date_cycle")),
+                                    enable_checks = reader.GetBoolean(reader.GetOrdinal("enable_checks"))
                                 };
                             }
                         }

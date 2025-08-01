@@ -29,6 +29,8 @@ namespace BoxSmart_ERP
 {
     public partial class MainForm : Form
     {
+        //icons used credits to:
+        //<a href="https://www.flaticon.com/free-icons/box" title="box icons">Box icons created by Freepik - Flaticon</a>
         //app version
         public readonly string _appVersion = "1.0.0";
         // P/Invoke declarations for moving the window
@@ -546,11 +548,14 @@ namespace BoxSmart_ERP
                 }
                 else if (action.Contains("diecut_dispose"))
                 {
-                    // Open the dispose form for the diecut item
-                    //Check if diecut was almost two years old or the usage is over 80%
+                    SpecimenCycles specimenCycles = GetSpecimenCycles();
+                    if (!specimenCycles.enable_checks)
+                    {
+                        MessageBox.Show("The system has disabled checks on usage limits and aging for Rubberdie and Diecuts. Press the OK button to continue but proceed with caution.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                     if (!CheckDiecutItemUsage(diecutId))
                     {
-                        MessageBox.Show("This diecut item cannot be disposed because it is either too new or has not reached the usage limit.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("This diecut item cannot be disposed because it is either too new or has not reached the usage limit. You can disable these checks from the User Profile menu subject to your department head's approval.", "Diecut Development", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         return;
                     }
                     DisposeDiecut disposeDiecut = new(_config, diecutId);
@@ -575,27 +580,29 @@ namespace BoxSmart_ERP
         {
             public int row_limit { get; set; }
             public int rubberdie_life_cycle { get; set; }
-            public short rubberdie_date_cycle { get; set; } // Changed to short for smallint
+            public short rubberdie_date_cycle { get; set; } /
             public int diecut_life_cycle { get; set; }
-            public short diecut_date_cycle { get; set; }     // Changed to short for smallint
+            public short diecut_date_cycle { get; set; }   
+            public bool isvalid { get; set; }
+            public bool enable_checks { get; set; } 
 
-            // Optional: Add a default constructor or a constructor with parameters
             public SpecimenCycles()
-            {
-                // Default values if no valid settings are found
-                row_limit = 0; // Or a sensible default
+            {                
+                row_limit = 0;
                 rubberdie_life_cycle = 0;
                 rubberdie_date_cycle = 0;
                 diecut_life_cycle = 0;
                 diecut_date_cycle = 0;
+                isvalid = true;
+                enable_checks = true;
             }
         }
 
         public SpecimenCycles GetSpecimenCycles()
         {
-            SpecimenCycles cycles = null; // Initialize to null, will be populated if data is found
+            SpecimenCycles cycles = null; // 
 
-            string query = "SELECT rowlimit, rubberdie_life_cycle, rubberdie_date_cycle, diecut_life_cycle, diecut_date_cycle " +
+            string query = "SELECT rowlimit, rubberdie_life_cycle, rubberdie_date_cycle, diecut_life_cycle, diecut_date_cycle, enable_checks " +
                            "FROM settings WHERE isvalid=true;";
             try
             {
@@ -614,7 +621,8 @@ namespace BoxSmart_ERP
                                     rubberdie_life_cycle = reader.GetInt32(reader.GetOrdinal("rubberdie_life_cycle")),
                                     rubberdie_date_cycle = reader.GetInt16(reader.GetOrdinal("rubberdie_date_cycle")), 
                                     diecut_life_cycle = reader.GetInt32(reader.GetOrdinal("diecut_life_cycle")),
-                                    diecut_date_cycle = reader.GetInt16(reader.GetOrdinal("diecut_date_cycle")) 
+                                    diecut_date_cycle = reader.GetInt16(reader.GetOrdinal("diecut_date_cycle")),
+                                    enable_checks = reader.GetBoolean(reader.GetOrdinal("enable_checks"))
                                 };
                             }
                         }
@@ -633,14 +641,14 @@ namespace BoxSmart_ERP
         private bool CheckDiecutItemUsage(int diecutId)
         {
             SpecimenCycles cyclesData = GetSpecimenCycles();
+            //Check first if enable_checks is false
+            if (!cyclesData.enable_checks)
+            {
+                return true; // If checks are disabled, return true
+            }
 
-            DateTime currentDate = DateTime.Now;
-            DateTime fiveYearsAgo = currentDate.AddYears(-cyclesData.diecut_date_cycle);
-            DateTime nineteenMonthsAgo = currentDate.AddMonths(-19);
-
-            int diecutLifecycle = cyclesData.diecut_life_cycle; 
             // SQL query to check conditions
-            string query = @"
+            string query = @$"
             SELECT EXISTS (
                 SELECT 1 
                 FROM diecut_tools 
@@ -649,9 +657,7 @@ namespace BoxSmart_ERP
                 AND (
                     current_usage >= life_cycle * 0.8
                     OR 
-                    date_created <= @fiveYearsAgo
-                )
-            )";
+                    date_created <= NOW() - INTERVAL '{cyclesData.diecut_date_cycle} years'))";
 
             try
             {
@@ -663,9 +669,7 @@ namespace BoxSmart_ERP
                     {
                         // Add parameters to prevent SQL injection
                         command.Parameters.AddWithValue("id", diecutId);
-                        command.Parameters.AddWithValue("lifeCycle", diecutLifecycle);
-                        command.Parameters.AddWithValue("fiveYearsAgo", fiveYearsAgo);
-
+                        command.Parameters.AddWithValue("lifeCycle", cyclesData.diecut_life_cycle);                        
                         return (bool)command.ExecuteScalar();
                     }
                 }

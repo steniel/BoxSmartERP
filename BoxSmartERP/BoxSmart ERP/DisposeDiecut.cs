@@ -59,38 +59,64 @@ namespace BoxSmart_ERP
             string closeHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/Dispose.html");
             webView21.Source = new Uri(closeHTMLPath);
             webView21.CoreWebView2.WebMessageReceived += DisposeWinMessagReceived;
+
+            await webView22.EnsureCoreWebView2Async(null);
+            string titleBarHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/DisposeTitleBar.html");
+            webView22.Source = new Uri(titleBarHTMLPath);
+            webView22.CoreWebView2.WebMessageReceived += DisposeTitleBarReceived;
         }
 
+        private async void DisposeTitleBarReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {            
+            string message = e.WebMessageAsJson;
+            if (message == "\"btCloseClicked\"")
+            {
+                this.Close();
+            }
+        }
+
+        public class MessagePayload
+        {
+            public string Command { get; set; }
+            public string Data { get; set; }
+        }
         private async void DisposeWinMessagReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
         {
-            var message = JsonSerializer.Deserialize<Dictionary<string, string>>(e.WebMessageAsJson);
-            if (message != null && message.TryGetValue("Command", out string command))
+            //var message = JsonSerializer.Deserialize<Dictionary<string, string>>(e.WebMessageAsJson);
+            var json = e.WebMessageAsJson;
+            var message = System.Text.Json.JsonSerializer.Deserialize<MessagePayload>(json);
+            if (message.Command == "close")
             {
-                if (command == "close")
+                this.Close();
+            }
+            else if (message.Command == "dispose")
+            {                
+                if (MessageBox.Show("Are you sure you want to dispose of this diecut item?", "Confirm Dispose", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
                 {
-                    this.Close();
-                }else if (command == "dispose")
-                {
-                    if (MessageBox.Show("Are you sure you want to dispose of this diecut item?", "Confirm Dispose", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    try
                     {
-                        try
+                        string remarks="";
+                        if (!string.IsNullOrWhiteSpace(message.Data))
                         {
-                            int SessionUserID = AppSession.CurrentUserId;
-                            // Call the DisposeDiecutItem method
-                            await _dbService.DisposeDiecutItem(_DiecutID, SessionUserID);
-                            MessageBox.Show("Diecut item disposed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            //refresh MainForm webView2 control
-                            MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
-                            if (mainForm != null)
-                            {
-                                mainForm.RefreshWebViewApps();
-                            }
-                            this.Close();
+                            remarks = message.Data;
+                            // proceed using remarks
                         }
-                        catch (Exception ex)
+
+                        int SessionUserID = AppSession.CurrentUserId;
+                        // Call the DisposeDiecutItem method
+                        await _dbService.DisposeDiecutItem(_DiecutID, SessionUserID, remarks);
+                        MessageBox.Show("Diecut item disposed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        //refresh MainForm webView2 control
+                        MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
+                        if (mainForm != null)
                         {
-                            MessageBox.Show("An error occurred while disposing the diecut item. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            mainForm.RefreshWebViewApps();
                         }
+                        this.Close();
+                    }
+                    catch (Exception ex)    
+                    {
+                        MessageBox.Show("An error occurred while disposing the diecut item. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             }

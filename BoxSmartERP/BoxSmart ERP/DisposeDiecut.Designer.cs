@@ -29,7 +29,9 @@
         private void InitializeComponent()
         {
             webView21 = new Microsoft.Web.WebView2.WinForms.WebView2();
+            webView22 = new Microsoft.Web.WebView2.WinForms.WebView2();
             ((System.ComponentModel.ISupportInitialize)webView21).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)webView22).BeginInit();
             SuspendLayout();
             // 
             // webView21
@@ -37,30 +39,46 @@
             webView21.AllowExternalDrop = true;
             webView21.CreationProperties = null;
             webView21.DefaultBackgroundColor = Color.White;
-            webView21.Dock = DockStyle.Fill;
-            webView21.Location = new Point(0, 0);
+            webView21.Dock = DockStyle.Bottom;
+            webView21.Location = new Point(0, 39);
             webView21.Name = "webView21";
-            webView21.Size = new Size(807, 580);
+            webView21.Size = new Size(718, 661);
             webView21.TabIndex = 0;
             webView21.ZoomFactor = 1D;
             webView21.NavigationCompleted += webView21_NavigationCompleted;
+            // 
+            // webView22
+            // 
+            webView22.AllowExternalDrop = true;
+            webView22.CreationProperties = null;
+            webView22.DefaultBackgroundColor = Color.White;
+            webView22.Dock = DockStyle.Top;
+            webView22.Location = new Point(0, 0);
+            webView22.Name = "webView22";
+            webView22.Size = new Size(718, 40);
+            webView22.TabIndex = 1;
+            webView22.ZoomFactor = 1D;
             // 
             // DisposeDiecut
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(807, 580);
+            ClientSize = new Size(718, 700);
+            Controls.Add(webView22);
             Controls.Add(webView21);
             FormBorderStyle = FormBorderStyle.None;
             Name = "DisposeDiecut";
+            ShowIcon = false;
             StartPosition = FormStartPosition.CenterParent;
             Text = "DisposeDiecut";
             ((System.ComponentModel.ISupportInitialize)webView21).EndInit();
+            ((System.ComponentModel.ISupportInitialize)webView22).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
 
         private Microsoft.Web.WebView2.WinForms.WebView2 webView21;
+        private Microsoft.Web.WebView2.WinForms.WebView2 webView22;
     }
 }
