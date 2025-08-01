@@ -580,7 +580,7 @@ namespace BoxSmart_ERP
         {
             public int row_limit { get; set; }
             public int rubberdie_life_cycle { get; set; }
-            public short rubberdie_date_cycle { get; set; } /
+            public short rubberdie_date_cycle { get; set; } 
             public int diecut_life_cycle { get; set; }
             public short diecut_date_cycle { get; set; }   
             public bool isvalid { get; set; }

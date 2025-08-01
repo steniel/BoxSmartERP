@@ -223,6 +223,9 @@
     <None Update="WebResources\Dispose.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="WebResources\AddMaintenanceTitleBar.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="WebResources\EditDiecut.html">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

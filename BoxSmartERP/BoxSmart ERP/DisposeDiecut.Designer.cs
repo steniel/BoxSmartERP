@@ -40,9 +40,9 @@
             webView21.CreationProperties = null;
             webView21.DefaultBackgroundColor = Color.White;
             webView21.Dock = DockStyle.Bottom;
-            webView21.Location = new Point(0, 39);
+            webView21.Location = new Point(0, 40);
             webView21.Name = "webView21";
-            webView21.Size = new Size(718, 661);
+            webView21.Size = new Size(718, 675);
             webView21.TabIndex = 0;
             webView21.ZoomFactor = 1D;
             webView21.NavigationCompleted += webView21_NavigationCompleted;
@@ -63,7 +63,7 @@
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(718, 700);
+            ClientSize = new Size(718, 715);
             Controls.Add(webView22);
             Controls.Add(webView21);
             FormBorderStyle = FormBorderStyle.None;

@@ -319,6 +319,7 @@
                         console.log("User confirmed update. Proceeding...");
                         //window.chrome.webview.postMessage({ Command: "dispose" });
                         const remarks = document.getElementById("disposeRemarks").value.trim();
+                        console.log(remarks);
                         sendCommandToDisposeWin("dispose", remarks);
                     } else {
                         console.log("User cancelled update.");
@@ -342,7 +343,7 @@
         function sendCommandToDisposeWin(command, remarks) {            
             const payload = {
                 Command: command,
-                data: disposeRemarks
+                Data: remarks
             };
             window.chrome.webview.postMessage(payload);
         }

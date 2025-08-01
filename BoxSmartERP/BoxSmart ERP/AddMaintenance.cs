@@ -47,7 +47,7 @@ namespace BoxSmart_ERP
 
             string connectionString = Config.PostgreSQLConnection;
             _dbService = new PostgreSQLServices(connectionString);
-            _permissionService = new PermissionService(connectionString); // PostgreSQL connection string for permissions
+            _permissionService = new PermissionService(connectionString); // PostgreSQL connection string for permissions AddMaintenanceTitleBar
             InitializeWebControl();
         }
 
@@ -56,19 +56,60 @@ namespace BoxSmart_ERP
             await webView21.EnsureCoreWebView2Async(null);
             string closeHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/AddMaintenance.html");
             webView21.Source = new Uri(closeHTMLPath);
-            webView21.CoreWebView2.WebMessageReceived += DisposeWinMessagReceived;
-        }
-        private async void DisposeWinMessagReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
-        {
-            var message = JsonSerializer.Deserialize<Dictionary<string, string>>(e.WebMessageAsJson);
-            if (message != null && message.TryGetValue("Command", out string command))
-            {
-                if (command == "close")
-                {
-                    this.Close();
-                }else if (command == "dispose")
-                {
+            webView21.CoreWebView2.WebMessageReceived += MaintenanceHTMLReceived;
 
+            await webView22.EnsureCoreWebView2Async(null);
+            string titleBarHTMLPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "WebResources/AddMaintenanceTitleBar.html");
+            webView22.Source = new Uri(titleBarHTMLPath);
+            webView22.CoreWebView2.WebMessageReceived += MaintenanceTitleBarReceived;
+        }
+
+        private void MaintenanceTitleBarReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            string message = e.WebMessageAsJson;
+            if (message == "\"btCloseClicked\"")
+            {
+                this.Close();
+            }
+        }
+        public class MessagePayload
+        {
+            public string Command { get; set; }
+            public string Data { get; set; }
+            public int RepairType { get; set; }
+        }
+
+        private async void MaintenanceHTMLReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
+        {
+            //var message = JsonSerializer.Deserialize<Dictionary<string, string>>(e.WebMessageAsJson);
+            var json = e.WebMessageAsJson;
+            var message = System.Text.Json.JsonSerializer.Deserialize<MessagePayload>(json);
+            if (message.Command == "maintenance") {
+                if (MessageBox.Show("Are you sure you want this diecut item for maintenance?", "Confirm Dispose", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) == DialogResult.Yes)
+                {
+                    try
+                    {
+                        string remarks = "";
+                        if (!string.IsNullOrWhiteSpace(message.Data))
+                        {
+                            remarks = message.Data;                            
+                        }
+                        
+                        int SessionUserID = AppSession.CurrentUserId;                        
+                        await _dbService.MaintainanceDiecutItem(_DiecutID, SessionUserID, remarks, message.RepairType);
+                        MessageBox.Show("Diecut item was added to the maintenance successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        //refresh MainForm webView2 control
+                        MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
+                        if (mainForm != null)
+                        {
+                            mainForm.RefreshWebViewApps();
+                        }
+                        this.Close();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("An error occurred while disposing the diecut item. Please try again.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
         }
@@ -83,6 +124,9 @@ namespace BoxSmart_ERP
             await webView21.CoreWebView2.ExecuteScriptAsync(script);
 
             script = $"setLoggedUserId('{currentUserId}');";
+            await webView21.CoreWebView2.ExecuteScriptAsync(script);
+
+            script = $"setDiecutID('{_DiecutID}');";
             await webView21.CoreWebView2.ExecuteScriptAsync(script);
 
             DiecutAttributes DiecutItemProperties = new();

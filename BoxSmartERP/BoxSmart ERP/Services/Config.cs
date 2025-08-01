@@ -15,7 +15,16 @@ namespace BoxSmart_ERP.Services
         public static string PostgreSQLUsername;
         public static SecureString PostgreSQLPassword; // Store encrypted password
         public static string ApplicationName = "BoxSmart";  
+        
+        public static int DiecutDevelopment = 14;
+        public static int DiecutActiveStatus = 15;
+        public static int DiecutMaintenanceStatus = 16;
+        public static int DiecutArchivedStatus = 17;
         public static int DiecutDisposeStatus = 18;
+        public static int DiecutOnHoldStatus = 19;
+        public static int DiecutCancelledStatus = 20;
+        public static int DiecutPendingStatus = 21;
+        public static int DefaultRepairTypeID = 1; // Default Repair Type ID for new diecuts
         public static string DecryptPassword(string encryptedBase64)
         {
             byte[] encryptedBytes = Convert.FromBase64String(encryptedBase64);

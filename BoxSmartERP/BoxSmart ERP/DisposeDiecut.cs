@@ -98,15 +98,12 @@ namespace BoxSmart_ERP
                         string remarks="";
                         if (!string.IsNullOrWhiteSpace(message.Data))
                         {
-                            remarks = message.Data;
-                            // proceed using remarks
+                            remarks = message.Data;                            
                         }
 
-                        int SessionUserID = AppSession.CurrentUserId;
-                        // Call the DisposeDiecutItem method
+                        int SessionUserID = AppSession.CurrentUserId;                        
                         await _dbService.DisposeDiecutItem(_DiecutID, SessionUserID, remarks);
-                        MessageBox.Show("Diecut item disposed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        //refresh MainForm webView2 control
+                        MessageBox.Show("Diecut item disposed successfully.", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);                        
                         MainForm mainForm = (MainForm)Application.OpenForms["MainForm"];
                         if (mainForm != null)
                         {

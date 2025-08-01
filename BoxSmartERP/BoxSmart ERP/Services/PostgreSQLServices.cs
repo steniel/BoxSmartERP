@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Antlr4.Runtime.Misc;
+using Newtonsoft.Json;
 using Npgsql;
 using NpgsqlTypes;
 using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
@@ -165,11 +166,10 @@ namespace BoxSmart_ERP.Services
                         try
                         {
                             using var cmd = new NpgsqlCommand(
-                                "INSERT INTO die_maintenance_log(diecut_id, maintenance_date, user_id, estimated_downtime, notes, action_id) VALUES(@p1, @p2, @p3, @p4, @p5, @p6);", conn, transaction);
+                                "INSERT INTO die_maintenance_log(diecut_id, maintenance_date, user_id, notes, RepairTypeID) VALUES(@p1, @p2, @p3, @p5, @p6);", conn, transaction);
                             cmd.Parameters.AddWithValue("p1", maintenance.DiecutId);
                             cmd.Parameters.AddWithValue("p2", DateTime.Parse(maintenance.MaintenanceDate));
-                            cmd.Parameters.AddWithValue("p3", maintenance.UserId);
-                            cmd.Parameters.AddWithValue("p4", maintenance.EstimatedDowntime);
+                            cmd.Parameters.AddWithValue("p3", maintenance.UserId);                            
                             cmd.Parameters.AddWithValue("p5", maintenance.Notes);
                             cmd.Parameters.AddWithValue("p6", maintenance.ActionId);
 
@@ -2264,7 +2264,8 @@ namespace BoxSmart_ERP.Services
             public int DiecutId { get; set; }
             public int MaintenanceId { get; set; } //Maintenance table
             public string MaintenanceAction { get; set; } //Maintenance table  
-            public int EstimatedDownTime { get; set; } //Maintenance table  
+            public string FormattedTimeInMaintenance { get; set; } //Maintenance table
+            public string EstimatedDownTime { get; set; } //Maintenance table  
             public string OrganizationName { get; set; } // Assuming this is the organization name
             public string ItemDescription { get; set; }
             public string DiecutNumber { get; set; }
@@ -2276,6 +2277,7 @@ namespace BoxSmart_ERP.Services
             public string ItemNotes { get; set; }
             public string ItemStatus { get; set; }
             public DateTime DateCreated { get; set; }
+            public string DateRestored { get; set; }
             public string RequisitionNumber { get; set; } 
         }
         public string GetDiecutTable(int draw, int start, int length, string searchValue, string dateYear, string dateMonth)
@@ -2387,6 +2389,7 @@ namespace BoxSmart_ERP.Services
                                     ItemNotes = reader.IsDBNull(reader.GetOrdinal("notes")) ? null : reader.GetString(reader.GetOrdinal("notes")),
                                     ItemStatus = reader.GetString(reader.GetOrdinal("status")),
                                     DateCreated = reader.GetDateTime(reader.GetOrdinal("date_created")),
+                                    DateRestored = reader.IsDBNull(reader.GetOrdinal("date_restored")) ? "N/A" : reader.GetDateTime(reader.GetOrdinal("date_restored")).ToString("yyyy-MM-dd"),
                                     RequisitionNumber = reader.GetString(reader.GetOrdinal("requisition_number")),
                                 });
                             }
@@ -2442,8 +2445,7 @@ namespace BoxSmart_ERP.Services
                     item_description ILIKE @searchValue OR
                     diecut_number ILIKE @searchValue OR                    
                     machine ILIKE @searchValue OR
-                    maintenance_action ILIKE @searchValue OR
-                    status ILIKE @searchValue                   
+                    maintenance_action ILIKE @searchValue OR                               
                 )
             ";
             }
@@ -2481,7 +2483,7 @@ namespace BoxSmart_ERP.Services
                     // 3. Get the actual paged and filtered data
                     string dataQuery = $@"
                     SELECT maintenance_id, customer, item_description, diecut_number, type, 
-                           machine, maintenance_action, estimated_downtime, current_usage, notes, status, date_created
+                           machine, maintenance_action, time_in_maintenance, current_usage, notes, date_created, date_restored
                     FROM diecut_maintenance_view                    
                     {baseWhereClause} {dateFilterClause} {searchFilterClause}
                     ORDER BY date_created DESC
@@ -2515,16 +2517,15 @@ namespace BoxSmart_ERP.Services
                                     DiecutType = reader.GetString(reader.GetOrdinal("type")),
                                     AssignedMachine = reader.GetString(reader.GetOrdinal("machine")),
                                     MaintenanceAction = reader.GetString(reader.GetOrdinal("maintenance_action")),
-                                    EstimatedDownTime = reader.GetInt32(reader.GetOrdinal("estimated_downtime")),
+                                    EstimatedDownTime = ToHumanReadableString(reader.GetTimeSpan(reader.GetOrdinal("time_in_maintenance"))),
                                     CurrentUsage = reader.GetInt32(reader.GetOrdinal("current_usage")),
-                                    ItemNotes = reader.IsDBNull(reader.GetOrdinal("notes")) ? null : reader.GetString(reader.GetOrdinal("notes")),
-                                    ItemStatus = reader.GetString(reader.GetOrdinal("status")),
+                                    ItemNotes = reader.IsDBNull(reader.GetOrdinal("notes")) ? null : reader.GetString(reader.GetOrdinal("notes")),                                    
                                     DateCreated = reader.GetDateTime(reader.GetOrdinal("date_created"))
                                 });
                             }
                         }
                     }
-                }
+                }   
 
                 var response = new DiecutDataResponse
                 {
@@ -2544,6 +2545,36 @@ namespace BoxSmart_ERP.Services
                 return System.Text.Json.JsonSerializer.Serialize(new { error = "Error loading data: " + ex.Message, draw = draw }); // Include draw for DataTables
             }
         }
+
+        public static string ToHumanReadableString(TimeSpan timeSpan)
+        {
+            var parts = new List<string>();
+
+            if (timeSpan.Days > 0)
+            {
+                parts.Add($"{timeSpan.Days} day{(timeSpan.Days > 1 ? "s" : "")}");
+            }
+            if (timeSpan.Hours > 0)
+            {
+                parts.Add($"{timeSpan.Hours} hour{(timeSpan.Hours > 1 ? "s" : "")}");
+            }
+            if (timeSpan.Minutes > 0)
+            {
+                parts.Add($"{timeSpan.Minutes} minute{(timeSpan.Minutes > 1 ? "s" : "")}");
+            }
+            if (timeSpan.TotalSeconds < 60 && timeSpan.TotalSeconds > 0)
+            {
+                parts.Add($"{timeSpan.Seconds} second{(timeSpan.Seconds > 1 ? "s" : "")}");
+            }
+
+            if (parts.Count == 0)
+            {
+                return "less than a minute";
+            }
+
+            return string.Join(", ", parts);
+        }
+
         //Ruberdie plates datatable
         public class RubberdieDataResponse
         {
@@ -2878,6 +2909,68 @@ namespace BoxSmart_ERP.Services
 
                     transaction.Commit();
                 }                   
+            }
+            catch (Exception ex)
+            {
+                LogErrorMessage(ex, "DisposeDiecutItem");
+                Console.WriteLine($"Error updating diecut_tools: {ex.Message}");
+                throw;
+            }
+        }
+
+        internal async Task MaintainanceDiecutItem(int diecutId, int SessionUserID, string remarks, int RepairTypeID)
+        {
+            try
+            {
+                // Ensure RepaireTypeID is a valid integer / value
+                int validRepairTypeID = RepairTypeID > 0 ? RepairTypeID : Config.DefaultRepairTypeID;   
+                var connection = new NpgsqlConnection(_connectionString);
+                connection.Open();
+                using (var transaction = connection.BeginTransaction())
+                {
+                    // Set session user_id
+                    using (var command = new NpgsqlCommand($"SET SESSION my.current_user_id = {SessionUserID};", connection))
+                    {
+                        command.ExecuteNonQuery();
+                    }
+                    
+                    // Update diecut to maintenance status (16)
+                    string sql = "UPDATE diecut_tools SET status_id = @status_id " +                                 
+                                  "WHERE id = @diecutId;";
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@status_id", Config.DiecutMaintenanceStatus);
+                        cmd.Parameters.AddWithValue("@diecutId", diecutId);                        
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    // Get description from diecut_tools table
+                    string diecutItemDescription = "";
+                    sql = "SELECT tr.item_description FROM tooling_requests tr " +
+                           "JOIN diecut_tools dt ON dt.request_id=tr.request_id " +
+                           "WHERE dt.id=@diecutId;";    
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@diecutId", diecutId);
+                        diecutItemDescription = cmd.ExecuteScalar() as string;
+                    }   
+
+                    // Insert into die_maintenance_log table
+                    sql = "INSERT INTO die_maintenance_log (diecut_id, maintenance_date, description, user_id, notes, action_id) " +
+                          "VALUES ( @diecutId, @maintenance_date, @description, @user_id, @user_notes, @RepairTypeID );";  
+                    using (var cmd = new NpgsqlCommand(sql, connection))
+                    {
+                        cmd.Parameters.AddWithValue("@diecutId", diecutId);                        
+                        cmd.Parameters.AddWithValue("@maintenance_date", DateTime.Now);
+                        cmd.Parameters.AddWithValue("@description", diecutItemDescription);
+                        cmd.Parameters.AddWithValue("@user_id", SessionUserID);
+                        cmd.Parameters.AddWithValue("@user_notes", remarks);
+                        cmd.Parameters.AddWithValue("@RepairTypeID", validRepairTypeID);
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    transaction.Commit();
+                }
             }
             catch (Exception ex)
             {
